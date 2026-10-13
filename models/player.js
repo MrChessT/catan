@@ -24,6 +24,10 @@ export default class Player {
   largest_army = false
   longest_road = false
   longest_road_list = []
+  money = CONST.MONEY.START
+  bank_unlocked = false
+  /** @type {{ number: number, amount: number, turn_created: number }[]} */
+  bets = []
 
   constructor(id, name, { onChange, onVpChange }) {
     this.id = id
@@ -175,6 +179,29 @@ export default class Player {
     this.#onChange(this.id, 'longest_road_list', { longest_road_list: locs })
   }
 
+  /** @returns {boolean} true only the first time (bonus given) */
+  unlockBank() {
+    if (this.bank_unlocked) return false
+    this.bank_unlocked = true
+    this.money += CONST.MONEY.UNLOCK_BONUS
+    this.#onChange(this.id, 'money', { money: this.money, bank_unlocked: true })
+    return true
+  }
+
+  giveMoney(amount) {
+    if (!Number.isInteger(amount) || amount <= 0) return false
+    this.money += amount
+    this.#onChange(this.id, 'money', { money: this.money })
+    return true
+  }
+
+  takeMoney(amount) {
+    if (!Number.isInteger(amount) || amount <= 0 || this.money < amount) return false
+    this.money -= amount
+    this.#onChange(this.id, 'money', { money: this.money })
+    return true
+  }
+
   setLastStatus(message) { this.last_status = message }
 
   removePlayer() { this.removed = true }
@@ -195,10 +222,13 @@ export default class Player {
       longest_road: this.longest_road,
       longest_road_list: this.longest_road_list,
       removed: this.removed,
+      money: this.money,
+      bank_unlocked: this.bank_unlocked,
       ...(get_private ? {
         turn_bought_dc: this.turn_bought_dc,
         private_vps: this.private_vps,
         closed_cards: this.closed_cards,
+        bets: this.bets,
       } : {})
     }
     return playerJSON

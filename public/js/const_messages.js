@@ -65,6 +65,11 @@ const GAME_MESSAGES = {
   LONGEST_ROAD: { all: (p, l) => `👣 ${getName(p)} took over the <b>"Longest Road"</b> with <b>${l} Roads</b> 🐾` },
   PLAYER_QUIT: { all: (p, end) => `🏃 ${getName(p)} has QUIT the game!!!${end ? ' The game has ended. <a href="/">New Game</a>' : ''}` },
   END_STATUS: { all: (p, pt) => `🏆 ${getName(p)} won with <b>${pt} V</b>ictory <b>P</b>oints.` },
+  // Money & Bank
+  BANK_UNLOCK: {
+    self: amount => `🏦 ¡Banco desbloqueado! <b>+${amount}${CONST.MONEY.EMOJI}</b> por construir junto al desierto.`,
+    other: (p, amount) => `🏦 ${getName(p)} desbloqueó el banco (+${amount}${CONST.MONEY.EMOJI}).`,
+  },
 }
 
 export default GAME_MESSAGES

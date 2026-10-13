@@ -11,12 +11,13 @@ import ResSelectionUI from "./res_selection_ui.js"
 import AnimationUI from "./animations_ui.js"
 import AccessibilityUI from "./accessibility_ui.js"
 import DiceStatsUI from "./dice_stats_ui.js"
+import BankUI from "./bank_ui.js"
 const $ = document.querySelector.bind(document)
 
 export default class UI {
   #game; #board; #player
   board_ui; player_ui; alert_ui; trade_ui; animation_ui; all_players_ui
-  robber_drop_ui; res_selection_ui; accessibility_ui; dice_stats_ui
+  robber_drop_ui; res_selection_ui; accessibility_ui; dice_stats_ui; bank_ui
   #temp = {}
   $splash = $('.splash')
 
@@ -84,6 +85,8 @@ export default class UI {
       onSubmit: (type, res1, res2) => game.onMonopolyYearOfPlentyResSelection(type, res1, res2),
       onDevCardClick: type => this.player_ui.clickCard(type),
     })
+
+    this.bank_ui = new BankUI(player, opponents)
   }
 
   render() {
@@ -95,6 +98,7 @@ export default class UI {
     this.dice_stats_ui.render()
     this.trade_ui.render()
     this.res_selection_ui.render()
+    this.bank_ui.render()
     this.$splash.classList.add('hide')
     this.#setUpEvents()
   }

@@ -176,7 +176,15 @@ export default class Game {
       Object.assign(this.getPlayer(update_player.id), update_player)
     }
     this.#ui.all_players_ui.updatePlayer(update_player, key)
+    this.#ui.bank_ui.update()
     this.#amIActing(update_player.id) && this.#ui.toggleActions(1)
+  }
+
+  // SOC_P - Money & Bank notification
+  updateBankEventSoc(type, pid, context) {
+    const is_me = this.#isMyPid(pid)
+    if (is_me && type === 'unlock') this.#audio_manager.playMonopoly()
+    this.#ui.alert_ui.alertBank(type, this.getPlayer(pid), context)
   }
 
   // SOC - Dice Value Update

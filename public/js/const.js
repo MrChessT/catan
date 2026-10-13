@@ -44,6 +44,22 @@ export const COST = {
   DEV_C: { W: 1, S: 1, O: 1 },
 }
 
+/**
+ * Money & Bank (house rule). Money is NOT a resource card: it lives in its own
+ * player field, so it never takes part in dice distribution, robber drops,
+ * robber steals, monopoly or trades.
+ */
+export const MONEY = {
+  START: 0,         // Money every player starts with
+  UNLOCK_BONUS: 10, // Given once, on the first settlement/city next to the bank tile
+  EXCHANGE_COST: 6, // Money paid for 1 resource of choice
+  BET_WINDOW: 3,    // Extra table turns (rounds) a bet stays active after the one it was placed in
+  EMOJI: '💰',
+}
+export const BANK_TILE = 'D' // Building next to the Desert unlocks the bank. Robber on it closes the bank.
+// Payout (floored) for a bet on each dice total. 7 can not be bet on.
+export const BET_MULTIPLIER = { 2: 5, 12: 5, 3: 3, 11: 3, 4: 2, 5: 2, 9: 2, 10: 2, 6: 1.5, 8: 1.5 }
+
 export const TRADE_OFFERS = {
   S2: 'Sheep 2:1',
   L2: 'Lumber 2:1',
@@ -124,6 +140,8 @@ export const SOCKET_EVENTS = {
   CLICK_LOC: 'clicked_location',
   BUY_DEV: 'buy_development_card',
   END_TURN: 'end_turn',
+  BANK_EXCHANGE: 'bank_exchange',
+  BANK_BET: 'bank_place_bet',
   // Both Sends…
   INITIAL_SETUP: 'ask/return_initial_setup',
   ROBBER_DROP: 'resources_dropped_to_robber/ack', // Private
@@ -150,6 +168,7 @@ export const SOCKET_EVENTS = {
   LONGEST_ROAD: 'longest_road',
   GAME_END: 'game_end',
   PLAYER_QUIT: 'player_quit',
+  BANK_EVENT: 'bank_event', // Private: unlock, exchange, bet placed/won/lost & errors
 }
 
 export const AUDIO_FILES = {

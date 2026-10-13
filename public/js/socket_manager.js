@@ -75,6 +75,9 @@ export default class SocketManager {
 
     /** @event Player-Quit */
     socket.on(SOC.PLAYER_QUIT, pid => game.updatePlayerQuitSoc(pid))
+
+    /** @event PRIVATE__Bank-Event */
+    socket.on(SOC.BANK_EVENT, (type, pid, context) => game.updateBankEventSoc(type, pid, context))
   }
 
   sendInitialSetup({ settlement_loc, road_loc }) { this.#socket.emit(SOC.INITIAL_SETUP, settlement_loc, road_loc) }

@@ -67,7 +67,7 @@ export default class IOManager {
 
   updateWaitingRoom(player) { this.emit(SOC.JOINED_WAITING_ROOM, player) }
 
-  updateState(state, active_pid) { this.emit(SOC.STATE_CHANGE, state, active_pid) }
+  updateState(state, active_pid) { this.emit(SOC.STATE_CHANGE, state, active_pid, this.#game.turn) }
 
   updateTimer(time, pid) { this.emit(SOC.SET_TIMER, time, pid) }
 
@@ -122,6 +122,10 @@ export default class IOManager {
   updateGameEnd(context) { this.emit(SOC.GAME_END, context) }
 
   updatePlayerQuit(pid) { this.emit(SOC.PLAYER_QUIT, pid) }
+
+  updateBank_Private(player_socket_id, type, pid, context) {
+    player_socket_id && this.#io.to(player_socket_id).emit(SOC.BANK_EVENT, type, pid, context)
+  }
 
   emit(type, ...data) { this.#io.to(this.#game.id).emit(type, ...data) }
 }

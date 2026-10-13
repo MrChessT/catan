@@ -1,0 +1,27 @@
+/* Money & Bank — floating on the left edge, below the accessibility icons */
+#game > .bank-zone {
+  position: fixed; left: 10px; top: 50%; transform: translateY(-50%);
+  z-index: 21; width: 190px;
+  font-family: Raleway, sans-serif; font-size: 14px;
+  color: var(--sand-color-text-dark);
+  filter: drop-shadow(0px 0px 10px #0008);
+
+  .money-list {
+    background: var(--sand-color);
+    border: 2px solid var(--sand-color-dark); border-radius: 8px;
+    overflow: hidden;
+  }
+  .money-row {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-left: 6px solid;
+    &.p1 { border-color: var(--player-1-color); }
+    &.p2 { border-color: var(--player-2-color); }
+    &.p3 { border-color: var(--player-3-color); }
+    &.p4 { border-color: var(--player-4-color); }
+    &.me { font-weight: bold; background: #fff5; }
+    &.deactivated { opacity: .5; }
+    .name { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    .lock { font-size: .8em; }
+    .amount { font-variant-numeric: tabular-nums; }
+  }
+}

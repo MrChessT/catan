@@ -9,6 +9,7 @@
 @import './index/animations.css';
 @import './index/accessibility.css';
 @import './index/alert.css';
+@import './index/bank.css';
 @import './fonts.css';
 
 body {

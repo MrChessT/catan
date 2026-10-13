@@ -116,6 +116,14 @@ export default class AlertUI {
   alertLargestArmy(p, count) { this.setStatus(MSG.LARGEST_ARMY.all(this.#isNotMe(p), count)) }
   alertLongestRoad(p, len) { this.setStatus(MSG.LONGEST_ROAD.all(this.#isNotMe(p), len)) }
   alertPlayerQuit(p, end) { this.bigAlert(MSG.PLAYER_QUIT.all(p, end)) }
+  alertBank(type, p, context = {}) {
+    switch (type) {
+      case 'unlock':
+        if (this.#isMe(p)) this.bigAlert(MSG.BANK_UNLOCK.self(context.amount))
+        else this.setStatus(MSG.BANK_UNLOCK.other(p, context.amount))
+        break
+    }
+  }
   alertGameEnd(p, context) {
     this.setStatus(MSG.END_STATUS.all(this.#isNotMe(p), context.vps))
     this.renderEndGameAlert(this.#isNotMe(p), context)

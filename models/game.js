@@ -507,6 +507,13 @@ export default class Game {
     piece === 'R' && this.#checkLongestRoad({ pid })
     this.map_changes.push({ pid, piece, loc })
     this.#io_manager.updateBuild(pid, piece, loc)
+    // Money & Bank: first settlement/city next to the bank tile unlocks it
+    if ((piece === 'S' || piece === 'C')
+      && this.board.findCorner(loc)?.tiles.some(t => t.type === CONST.BANK_TILE)
+      && player.unlockBank()
+    ) {
+      this.#notifyBank('unlock', pid, { amount: CONST.MONEY.UNLOCK_BONUS })
+    }
   }
 
   #checkLongestRoad({ pid, broken_pid }) {
@@ -564,6 +571,14 @@ export default class Game {
       obj.status = this.getPlayer(obj.pid)?.hasAllResources(obj.giving) ? 'open' : 'closed'
     })
     this.#io_manager.updateOngoingTrades(this.ongoing_trades)
+  }
+
+  /** Bank notification to everyone. `private_data` is only sent to `pid` */
+  #notifyBank(type, pid, data = {}, private_data = {}) {
+    this.players.forEach(p => {
+      const context = p.id === pid ? { ...data, ...private_data } : data
+      this.#io_manager.updateBank_Private(this.getPlayerSocId(p.id), type, pid, context)
+    })
   }
 
   #onPlayerVpChange(pid, vps) {
