@@ -175,6 +175,7 @@ export default class Game {
       this.#distributeTileResources(dice_total)
       this.#gotoNextState()
     }
+    this.#resolveBets(dice_total)
   }
 
   /** Robber Drop Resource */
@@ -467,6 +468,19 @@ export default class Game {
     this.#notifyBank('exchange', pid, { res, cost: CONST.MONEY.EXCHANGE_COST })
   }
 
+  /** Bank: bet `amount` money on a dice total (2-12, not 7) for the next BET_WINDOW table turns */
+  bankBetIO(pid, number, amount) {
+    if (!Number.isInteger(number) || !Object.hasOwn(CONST.BET_MULTIPLIER, number)
+      || !Number.isInteger(amount) || amount <= 0) return this.#bankError(pid, 'invalid_bet')
+    const player = this.getPlayer(pid)
+    const denied = this.#bankDeniedReason(pid)
+      || (player.bets.length && 'bet_active')
+      || (player.money < amount && 'no_money')
+    if (denied) return this.#bankError(pid, denied)
+    const bet = player.placeBet(number, amount, this.turn)
+    this.#notifyBank('bet_placed', pid, { amount }, { ...bet, payout: this.#betPayout(bet) })
+  }
+
   endTurnIO(pid) {
     if (!this.#canAct(pid)) return
     this.#next()
@@ -605,6 +619,28 @@ export default class Game {
 
   #bankError(pid, reason) {
     this.#io_manager.updateBank_Private(this.getPlayerSocId(pid), 'error', pid, { reason })
+  }
+
+  #betPayout({ number, amount }) { return Math.floor(amount * CONST.BET_MULTIPLIER[number]) }
+
+  /**
+   * Called once per dice roll. A bet covers the rolls while turn <= turn_created + BET_WINDOW.
+   * The first roll after that, an unmatched bet is lost (its amount was taken when placed).
+   * Bets resolve even if the player has lost bank access since.
+   */
+  #resolveBets(dice_total) {
+    this.players.forEach(player => {
+      player?.bets.slice().forEach(bet => {
+        if (this.turn > bet.turn_created + CONST.MONEY.BET_WINDOW) {
+          player.settleBet(bet)
+          this.#notifyBank('bet_lose', player.id, { ...bet })
+        } else if (dice_total === bet.number) {
+          const payout = this.#betPayout(bet)
+          player.settleBet(bet, payout)
+          this.#notifyBank('bet_win', player.id, { ...bet, payout })
+        }
+      })
+    })
   }
 
   /** Bank notification to everyone. `private_data` is only sent to `pid` */

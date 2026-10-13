@@ -186,9 +186,10 @@ export default class Game {
   // SOC_P - Money & Bank notification
   updateBankEventSoc(type, pid, context) {
     const is_me = this.#isMyPid(pid)
-    if (is_me && type === 'unlock') this.#audio_manager.playMonopoly()
-    if (is_me && type === 'error') this.#audio_manager.playFail()
+    if (is_me && (type === 'unlock' || type === 'bet_win')) this.#audio_manager.playMonopoly()
+    if (is_me && (type === 'error' || type === 'bet_lose')) this.#audio_manager.playFail()
     this.#ui.alert_ui.alertBank(type, this.getPlayer(pid), context)
+    if (is_me && (type === 'bet_win' || type === 'bet_lose')) this.#ui.bank_ui.setBetResult(type, context)
     this.#ui.bank_ui.update()
   }
 
@@ -450,6 +451,7 @@ export default class Game {
   onDiceClick() { this.#socket_manager.sendDiceClick() }
   onEndTurn() { this.#socket_manager.endTurn() }
   onBankExchange(res) { this.#socket_manager.sendBankExchange(res) }
+  onBankBet(number, amount) { this.#socket_manager.sendBankBet(number, amount) }
   //#endregion
 
   /**

@@ -19,6 +19,19 @@ npm start
 The server will be reachable at [localhost:3000](http://localhost:3000/). You're now ready to play the game…
 > I have an `.nvmrc` pointing to node version `v20.10`. Please use at least `v18` and above…
 
+Tests del motor (sin dependencias extra): `npm test`
+
+## Regla de la casa: Dinero y Banco 🏦
+- Todos empiezan con **0💰** y el banco **bloqueado** 🔒. El dinero **no da puntos de victoria** y no es una carta: no se reparte con los dados, no se descarta ni se roba con el ladrón y no se comercia.
+- La **primera vez** que construyes un poblado o ciudad **junto al desierto** recibes **+10💰** y se desbloquea tu banco (también en la colocación inicial).
+- El banco solo se puede usar **en tu turno, después de tirar**, y **está cerrado para todos mientras el ladrón esté en el desierto** (al empezar la partida lo está: se abre cuando alguien mueve el ladrón).
+- **Canjear:** 6💰 → 1 recurso a elegir.
+- **Apostar:** elige un número del 2 al 12 (no el 7) y una cantidad. Se paga al apostar. Si sale ese número en el resto de la ronda actual o en las 3 rondas siguientes, cobras `cantidad × multiplicador` (redondeado hacia abajo); si no, la pierdes. Una apuesta activa por jugador.
+
+  | Número | 2, 12 | 3, 11 | 4, 5, 9, 10 | 6, 8 |
+  |---|---|---|---|---|
+  | Multiplicador | ×5 | ×3 | ×2 | ×1.5 |
+
 ## Game Features
 - [x] Design your own map
 - [x] 2/3/4 Players

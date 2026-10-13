@@ -108,5 +108,7 @@ export default class SocketManager {
 
   sendBankExchange(res) { this.#socket.emit(SOC.BANK_EXCHANGE, res) }
 
+  sendBankBet(number, amount) { this.#socket.emit(SOC.BANK_BET, number, amount) }
+
   saveStatus(message) { this.#socket.emit(SOC.SAVE_STATUS, message) }
 }

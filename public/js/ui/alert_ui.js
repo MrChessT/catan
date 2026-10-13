@@ -123,6 +123,18 @@ export default class AlertUI {
         else this.setStatus(MSG.BANK_UNLOCK.other(p, context.amount))
         break
       case 'exchange': this.setStatus(MSG.BANK_EXCHANGE.all(this.#isNotMe(p), context.cost, context.res)); break
+      case 'bet_placed':
+        if (this.#isMe(p)) this.setStatus(MSG.BANK_BET_PLACED.self(context.number, context.amount, context.payout))
+        else this.setStatus(MSG.BANK_BET_PLACED.other(p, context.amount))
+        break
+      case 'bet_win':
+        if (this.#isMe(p)) this.bigAlert(MSG.BANK_BET_WIN.self(context.number, context.payout))
+        else this.setStatus(MSG.BANK_BET_WIN.other(p, context.number, context.payout))
+        break
+      case 'bet_lose':
+        if (this.#isMe(p)) this.setStatus(MSG.BANK_BET_LOSE.self(context.number, context.amount))
+        else this.setStatus(MSG.BANK_BET_LOSE.other(p, context.number, context.amount))
+        break
       case 'error': this.setStatus(MSG.BANK_ERROR[context.reason] || MSG.BANK_ERROR.invalid_resource); break
     }
   }

@@ -202,6 +202,25 @@ export default class Player {
     return true
   }
 
+  /** Takes the bet amount now. Only one active bet. @returns the bet or undefined */
+  placeBet(number, amount, turn_created) {
+    if (this.bets.length || !Number.isInteger(amount) || amount <= 0 || this.money < amount) return
+    const bet = { number, amount, turn_created }
+    this.money -= amount
+    this.bets.push(bet)
+    this.#onChange(this.id, 'bets', { money: this.money, bet })
+    return bet
+  }
+
+  /** Removes a resolved bet, paying `payout` (0 when lost; the amount was already taken) */
+  settleBet(bet, payout = 0) {
+    const index = this.bets.indexOf(bet)
+    if (index < 0) return
+    this.bets.splice(index, 1)
+    this.money += payout
+    this.#onChange(this.id, 'bets', { money: this.money, settled: bet, payout })
+  }
+
   setLastStatus(message) { this.last_status = message }
 
   removePlayer() { this.removed = true }

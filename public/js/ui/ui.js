@@ -89,6 +89,8 @@ export default class UI {
     this.bank_ui = new BankUI(player, opponents, {
       getDeniedReason: _ => game.getBankDeniedReason(),
       onExchange: res => game.onBankExchange(res),
+      onBet: (number, amount) => game.onBankBet(number, amount),
+      getTurn: _ => game.turn,
     })
   }
 

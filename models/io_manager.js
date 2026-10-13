@@ -66,6 +66,9 @@ export default class IOManager {
 
     /** @event Bank-Exchange (money → resource) */
     socket.on(SOC.BANK_EXCHANGE, res => game.bankExchangeIO(pid, res))
+
+    /** @event Bank-Bet (number, amount) */
+    socket.on(SOC.BANK_BET, (number, amount) => game.bankBetIO(pid, number, amount))
   }
 
   updateWaitingRoom(player) { this.emit(SOC.JOINED_WAITING_ROOM, player) }

@@ -71,6 +71,18 @@ const GAME_MESSAGES = {
     other: (p, amount) => `🏦 ${getName(p)} desbloqueó el banco (+${amount}${CONST.MONEY.EMOJI}).`,
   },
   BANK_EXCHANGE: { all: (p, cost, res) => `🏦 ${p ? `${getName(p)} canjeó` : 'Canjeaste'} ${cost}${CONST.MONEY.EMOJI} por ${resToText({ [res]: 1 })}.` },
+  BANK_BET_PLACED: {
+    self: (number, amount, payout) => `🎯 Apostaste ${amount}${CONST.MONEY.EMOJI} al <b>${number}</b>: si sale en esta ronda o en las ${CONST.MONEY.BET_WINDOW} siguientes cobras <b>${payout}${CONST.MONEY.EMOJI}</b>.`,
+    other: (p, amount) => `🎯 ${getName(p)} hizo una apuesta de ${amount}${CONST.MONEY.EMOJI}.`,
+  },
+  BANK_BET_WIN: {
+    self: (number, payout) => `🎉 ¡Salió el <b>${number}</b>! Ganas tu apuesta: <b>+${payout}${CONST.MONEY.EMOJI}</b>.`,
+    other: (p, number, payout) => `🎉 ${getName(p)} ganó su apuesta al <b>${number}</b>: +${payout}${CONST.MONEY.EMOJI}.`,
+  },
+  BANK_BET_LOSE: {
+    self: (number, amount) => `💸 Tu apuesta al <b>${number}</b> ha caducado: pierdes ${amount}${CONST.MONEY.EMOJI}.`,
+    other: (p, number, amount) => `💸 ${getName(p)} perdió su apuesta al <b>${number}</b> (${amount}${CONST.MONEY.EMOJI}).`,
+  },
   // Why the bank can not be used right now (shown in the bank panel)
   BANK_HINT: {
     locked: `🔒 Construye un poblado junto al desierto para desbloquear el banco (+${CONST.MONEY.UNLOCK_BONUS}${CONST.MONEY.EMOJI}).`,
@@ -84,6 +96,8 @@ const GAME_MESSAGES = {
     not_your_turn: `🏦 Solo puedes usar el banco en tu turno, después de tirar los dados.`,
     no_money: `${CONST.MONEY.EMOJI} No tienes suficiente dinero.`,
     invalid_resource: `🏦 Recurso no válido.`,
+    bet_active: `🎯 Ya tienes una apuesta activa: espera a que se resuelva.`,
+    invalid_bet: `🎯 Apuesta no válida: elige un número del 2 al 12 (no el 7) y una cantidad entera mayor que 0.`,
   },
 }
 
