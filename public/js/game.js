@@ -326,6 +326,8 @@ export default class Game {
     } else {
       this.#ui.all_players_ui.deactivatePlayer(pid)
     }
+    const player = this.getPlayer(pid)
+    if (player) { player.removed = true; this.#ui.bank_ui.update() }
   }
 
   setTimerSoc(t, pid) { this.#ui.player_ui.resetTimer(t, this.#isMyPid(pid)) }
