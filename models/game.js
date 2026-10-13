@@ -246,7 +246,10 @@ export default class Game {
   }
 
   /** Player Roll Click */
-  playerRollIO() { this.#next() }
+  playerRollIO(pid) {
+    if (!this.#isActive(pid) || this.state !== ST.PLAYER_ROLL) return
+    this.#next()
+  }
 
   /** Building - Edge & Corner click (other than initial-build) */
   clickedLocationIO(pid, loc_type, id) {
@@ -451,7 +454,10 @@ export default class Game {
     })
   }
 
-  endTurnIO() { this.#next() }
+  endTurnIO(pid) {
+    if (!this.#canAct(pid)) return
+    this.#next()
+  }
   saveStatusIO(pid, text) { this.getPlayer(pid).setLastStatus(text) }
   //#endregion
 
