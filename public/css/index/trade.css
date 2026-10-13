@@ -147,8 +147,8 @@
       &.O2::before { background-image: url(/images/trade/Ore.png); }
       &.S2::before { background-image: url(/images/trade/Sheep.png); }
       &.W2::before { background-image: url(/images/trade/Wheat.png); }
-      &._3::before { background-image: url(/images/trade/*3.png); }
-      &._4::before { background-image: url(/images/trade/trader-*4.png); }
+      &._3::before { background-image: url(/images/trade/any3.png); }
+      &._4::before { background-image: url(/images/trade/trader-any4.png); }
     }
 
 

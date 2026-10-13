@@ -162,7 +162,7 @@ body {
   &.S[data-trade="O"]::after { background-image: url(/catan/images/trade/Ore.png); }
   &.S[data-trade="S"]::after { background-image: url(/catan/images/trade/Sheep.png); }
   &.S[data-trade="W"]::after { background-image: url(/catan/images/trade/Wheat.png); }
-  &.S[data-trade="*"]::after { background-image: url(/catan/images/trade/*3.png); }
+  &.S[data-trade="*"]::after { background-image: url(/catan/images/trade/any3.png); }
   .beach-1 { background-image: url(/catan/images/beach-1.png); }
   .beach-2 { background-image: url(/catan/images/beach-2.png); }
   .beach-3 { background-image: url(/catan/images/beach-3.png); }
@@ -392,7 +392,7 @@ body {
         &.O2::before { background-image: url(/catan/images/trade/Ore.png); }
         &.S2::before { background-image: url(/catan/images/trade/Sheep.png); }
         &.W2::before { background-image: url(/catan/images/trade/Wheat.png); }
-        &._3::before { background-image: url(/catan/images/trade/*3.png); }
+        &._3::before { background-image: url(/catan/images/trade/any3.png); }
       }
       &:hover .trade-type::before { filter: drop-shadow(0px 5px 5px #000a); top: -5px; }
       .trade-text { text-align: center; margin-top: 10px; opacity: 0.5; }
@@ -488,7 +488,7 @@ body {
   &[data-trade-type="O2"] .tile.S::after { background-image: url(/catan/images/trade/Ore.png); }
   &[data-trade-type="S2"] .tile.S::after { background-image: url(/catan/images/trade/Sheep.png); }
   &[data-trade-type="W2"] .tile.S::after { background-image: url(/catan/images/trade/Wheat.png); }
-  &[data-trade-type="*3"] .tile.S::after { background-image: url(/catan/images/trade/*3.png); }
+  &[data-trade-type="*3"] .tile.S::after { background-image: url(/catan/images/trade/any3.png); }
 
   .cancel-container { display: none !important; }
 }
