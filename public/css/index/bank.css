@@ -24,4 +24,44 @@
     .lock { font-size: .8em; }
     .amount { font-variant-numeric: tabular-nums; }
   }
+
+  .bank-hint:not(:empty) {
+    margin-top: 6px; padding: 5px 8px; font-size: .85em;
+    background: #fffc; border-radius: 6px;
+  }
+
+  .bank-toggle {
+    margin-top: 6px; width: 100%; padding: 6px;
+    background: var(--sand-color-text-dark); color: #fff;
+    border-radius: 8px; font-weight: bold; font-size: 1.1em;
+    &:hover, &.active { background: color-mix(in srgb, var(--sand-color-text-dark) 70%, #000); }
+  }
+
+  .bank-panel {
+    margin-top: 6px; padding: 8px;
+    background: var(--sand-color);
+    border: 2px solid var(--sand-color-dark); border-radius: 8px;
+    section + section { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--sand-color-dark); }
+    .title { font-weight: bold; margin-bottom: 5px; small { font-weight: normal; } }
+    .note { font-size: .8em; min-height: 1em; margin-top: 3px; }
+    .note:empty { display: none; }
+  }
+
+  .res-options { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .res-option {
+    padding: 3px 0; width: 32px; border-radius: 6px; border: 2px solid transparent;
+    background: #fff6;
+    .res-icon { margin: 0; vertical-align: middle; }
+    &:hover { background: #fffa; }
+    &.selected { border-color: var(--sand-color-text-dark); background: #fff; }
+  }
+
+  .action {
+    width: 100%; padding: 5px; border-radius: 6px;
+    background: var(--trade-positive); color: #fff; font-weight: bold;
+    &:hover:not(:disabled) { filter: brightness(1.1); }
+    &:disabled { background: #999; cursor: not-allowed; }
+  }
+
+  .hide { display: none; }
 }

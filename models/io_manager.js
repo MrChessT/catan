@@ -63,6 +63,9 @@ export default class IOManager {
 
     /** @event Year-of-Plenty-Resource */
     socket.on(SOC.YEAR_OF_PLENTY, (res1, res2) => game.yearOfPlentyIO(pid, res1, res2))
+
+    /** @event Bank-Exchange (money → resource) */
+    socket.on(SOC.BANK_EXCHANGE, res => game.bankExchangeIO(pid, res))
   }
 
   updateWaitingRoom(player) { this.emit(SOC.JOINED_WAITING_ROOM, player) }

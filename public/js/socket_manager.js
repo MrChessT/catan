@@ -11,7 +11,7 @@ export default class SocketManager {
     socket.emit(SOC.PLAYER_ONLINE)
 
     /** @event State-Change */
-    socket.on(SOC.STATE_CHANGE, (state, active_pid) => game.updateStateChangeSoc(state, active_pid))
+    socket.on(SOC.STATE_CHANGE, (state, active_pid, turn) => game.updateStateChangeSoc(state, active_pid, turn))
 
     /** @event Set-Timer */
     socket.on(SOC.SET_TIMER, (t, pid) => game.setTimerSoc(t, pid))
@@ -105,6 +105,8 @@ export default class SocketManager {
   sendMonopolyResource(res) { this.#socket.emit(SOC.MONOPOLY, res) }
 
   sendYearOfPlentyResource(res1, res2) { this.#socket.emit(SOC.YEAR_OF_PLENTY, res1, res2) }
+
+  sendBankExchange(res) { this.#socket.emit(SOC.BANK_EXCHANGE, res) }
 
   saveStatus(message) { this.#socket.emit(SOC.SAVE_STATUS, message) }
 }

@@ -70,6 +70,21 @@ const GAME_MESSAGES = {
     self: amount => `🏦 ¡Banco desbloqueado! <b>+${amount}${CONST.MONEY.EMOJI}</b> por construir junto al desierto.`,
     other: (p, amount) => `🏦 ${getName(p)} desbloqueó el banco (+${amount}${CONST.MONEY.EMOJI}).`,
   },
+  BANK_EXCHANGE: { all: (p, cost, res) => `🏦 ${p ? `${getName(p)} canjeó` : 'Canjeaste'} ${cost}${CONST.MONEY.EMOJI} por ${resToText({ [res]: 1 })}.` },
+  // Why the bank can not be used right now (shown in the bank panel)
+  BANK_HINT: {
+    locked: `🔒 Construye un poblado junto al desierto para desbloquear el banco (+${CONST.MONEY.UNLOCK_BONUS}${CONST.MONEY.EMOJI}).`,
+    robber: `🥷 Banco cerrado: el ladrón está en el desierto.`,
+    not_your_turn: `🏦 El banco abre en tu turno, después de tirar los dados.`,
+  },
+  // Rejections from the server
+  BANK_ERROR: {
+    locked: `🔒 Tu banco está bloqueado: construye un poblado junto al desierto.`,
+    robber: `🥷 El banco está cerrado: el ladrón está en el desierto.`,
+    not_your_turn: `🏦 Solo puedes usar el banco en tu turno, después de tirar los dados.`,
+    no_money: `${CONST.MONEY.EMOJI} No tienes suficiente dinero.`,
+    invalid_resource: `🏦 Recurso no válido.`,
+  },
 }
 
 export default GAME_MESSAGES

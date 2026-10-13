@@ -8,7 +8,7 @@ import AudioManager from "./audio_manager.js"
 const ST = CONST.GAME_STATES
 
 export default class Game {
-  id; config; active_pid; state; opponents
+  id; config; active_pid; state; opponents; turn
   /** @type {UI} */ #ui;
   #board; #player; #socket_manager; #audio_manager
   #temp = {}
@@ -19,6 +19,7 @@ export default class Game {
     this.config = game_obj.config
     this.active_pid = game_obj.active_pid
     this.state = game_obj.state
+    this.turn = game_obj.turn
     this.opponents = opponents_obj
 
     this.#board = new Board(game_obj.config.mapkey, game_obj.map_changes)
@@ -70,10 +71,12 @@ export default class Game {
   //   SOCKET UPDATES
   //#region -----------
 
-  updateStateChangeSoc(state, active_pid) {
+  updateStateChangeSoc(state, active_pid, turn = this.turn) {
     this.state = state
     this.active_pid = active_pid
+    this.turn = turn
     this.#ui.all_players_ui.updateActive(active_pid)
+    this.#ui.bank_ui.update()
     switch (state) {
       case ST.INITIAL_SETUP: this.#onInitialSetup(); break
       case ST.PLAYER_ROLL: this.#onPlayerRoll(); break
@@ -184,7 +187,9 @@ export default class Game {
   updateBankEventSoc(type, pid, context) {
     const is_me = this.#isMyPid(pid)
     if (is_me && type === 'unlock') this.#audio_manager.playMonopoly()
+    if (is_me && type === 'error') this.#audio_manager.playFail()
     this.#ui.alert_ui.alertBank(type, this.getPlayer(pid), context)
+    this.#ui.bank_ui.update()
   }
 
   // SOC - Dice Value Update
@@ -224,6 +229,7 @@ export default class Game {
     this.#board.moveRobber(id)
     this.#ui.moveRobber(id)
     this.#ui.dice_stats_ui.update()
+    this.#ui.bank_ui.update() // Robber on/off the bank tile closes/opens the bank
     const tile = this.#board.findTile(id).type
     const num = this.#board.findTile(id).num || ''
     this.#ui.alert_ui.alertRobberMoveDone(this.getPlayer(pid), tile, num)
@@ -443,7 +449,19 @@ export default class Game {
   onBuyDevCardClick() { this.#socket_manager.buyDevCard() }
   onDiceClick() { this.#socket_manager.sendDiceClick() }
   onEndTurn() { this.#socket_manager.endTurn() }
+  onBankExchange(res) { this.#socket_manager.sendBankExchange(res) }
   //#endregion
+
+  /**
+   * Why I can not use the bank now (undefined → I can). The server validates it again.
+   * Keep in sync with `#bankDeniedReason` in models/game.js
+   * @returns {'locked'|'robber'|'not_your_turn'|undefined}
+   */
+  getBankDeniedReason() {
+    if (!this.#player.bank_unlocked) return 'locked'
+    if (this.#board.getRobbedTile()?.type === CONST.BANK_TILE) return 'robber'
+    if (!this.#amIActing()) return 'not_your_turn'
+  }
 
   toggleBgm(allow) { this.#audio_manager.toggleBgm(allow) }
   toggleNotificationsAudio(allow) { this.#audio_manager.toggleNotifications(allow) }

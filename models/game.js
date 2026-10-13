@@ -454,6 +454,19 @@ export default class Game {
     })
   }
 
+  /** Bank: exchange money for 1 resource of choice */
+  bankExchangeIO(pid, res) {
+    if (typeof res !== 'string' || !Object.hasOwn(CONST.RESOURCES, res)) return this.#bankError(pid, 'invalid_resource')
+    const player = this.getPlayer(pid)
+    const denied = this.#bankDeniedReason(pid)
+      || (player.money < CONST.MONEY.EXCHANGE_COST && 'no_money')
+    if (denied) return this.#bankError(pid, denied)
+    player.takeMoney(CONST.MONEY.EXCHANGE_COST)
+    player.giveCards({ [res]: 1 })
+    this.#updateOngoingTrades()
+    this.#notifyBank('exchange', pid, { res, cost: CONST.MONEY.EXCHANGE_COST })
+  }
+
   endTurnIO(pid) {
     if (!this.#canAct(pid)) return
     this.#next()
@@ -577,6 +590,21 @@ export default class Game {
       obj.status = this.getPlayer(obj.pid)?.hasAllResources(obj.giving) ? 'open' : 'closed'
     })
     this.#io_manager.updateOngoingTrades(this.ongoing_trades)
+  }
+
+  /**
+   * Bank access: own turn (actions phase), bank unlocked & robber not on the bank tile.
+   * Keep in sync with `getBankDeniedReason` in public/js/game.js
+   * @returns {'locked'|'robber'|'not_your_turn'|undefined}
+   */
+  #bankDeniedReason(pid) {
+    if (!this.getPlayer(pid)?.bank_unlocked) return 'locked'
+    if (this.board?.getRobbedTile()?.type === CONST.BANK_TILE) return 'robber'
+    if (!this.#canAct(pid)) return 'not_your_turn'
+  }
+
+  #bankError(pid, reason) {
+    this.#io_manager.updateBank_Private(this.getPlayerSocId(pid), 'error', pid, { reason })
   }
 
   /** Bank notification to everyone. `private_data` is only sent to `pid` */

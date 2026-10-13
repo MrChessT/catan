@@ -122,6 +122,8 @@ export default class AlertUI {
         if (this.#isMe(p)) this.bigAlert(MSG.BANK_UNLOCK.self(context.amount))
         else this.setStatus(MSG.BANK_UNLOCK.other(p, context.amount))
         break
+      case 'exchange': this.setStatus(MSG.BANK_EXCHANGE.all(this.#isNotMe(p), context.cost, context.res)); break
+      case 'error': this.setStatus(MSG.BANK_ERROR[context.reason] || MSG.BANK_ERROR.invalid_resource); break
     }
   }
   alertGameEnd(p, context) {

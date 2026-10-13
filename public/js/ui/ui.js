@@ -86,7 +86,10 @@ export default class UI {
       onDevCardClick: type => this.player_ui.clickCard(type),
     })
 
-    this.bank_ui = new BankUI(player, opponents)
+    this.bank_ui = new BankUI(player, opponents, {
+      getDeniedReason: _ => game.getBankDeniedReason(),
+      onExchange: res => game.onBankExchange(res),
+    })
   }
 
   render() {
