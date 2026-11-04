@@ -1,0 +1,17 @@
+# Despliegue en Render. Con este fichero en la raíz del repositorio, Render
+# configura el servicio solo: Blueprints → New Blueprint Instance.
+#
+# Aviso: el plan gratuito duerme el servidor tras ~15 min sin visitas y la
+# primera carga después tarda un minuto. Las partidas viven en memoria, así
+# que un reinicio del servidor las pierde.
+services:
+  - type: web
+    name: vector-catan
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /vector
+    envVars:
+      - key: NODE_VERSION
+        value: "20.10.0"

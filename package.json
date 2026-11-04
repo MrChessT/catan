@@ -5,10 +5,11 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "nodemon index.js -w index.js -w views -w models -e js,html",
+    "start": "node index.js",
     "deploy-shuffler": "sh ./deploy-gh-pages.sh",
     "dev-static": "sh ./dev-static-pages.sh",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "dev": "nodemon index.js -w index.js -w views -w models -e js,html"
   },
   "repository": {
     "type": "git",
@@ -31,5 +32,8 @@
   },
   "devDependencies": {
     "light-server": "^2.9.1"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
