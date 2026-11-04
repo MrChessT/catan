@@ -32,6 +32,82 @@ Tests del motor (sin dependencias extra): `npm test`
   |---|---|---|---|---|
   | Multiplicador | ×5 | ×3 | ×2 | ×1.5 |
 
+---
+
+# VECTOR — juego de pandemia 1v1 🦠
+
+Juego **original** de estrategia por turnos incluido en este mismo servidor, en
+`/vector`. Nada que ver con el Catan: código, rutas y cookies aparte.
+
+**Un patógeno contra la coalición sanitaria mundial.** El bando **se sortea al
+empezar cada partida**, así que te puede tocar infectar o curar.
+
+```bash
+npm start          # y abre http://localhost:3000/vector
+```
+
+### Cómo se juega
+1. Uno crea la partida y le pasa al otro la **clave de dos palabras**.
+2. Se sortean los bandos y cada uno elige su apertura: el patógeno su
+   **paciente cero**, la coalición **2 regiones de vigilancia** (a ciegas).
+3. **Rondas simultáneas:** los dos planificáis a la vez con **3 puntos de
+   acción**. Cuando ambos confirmáis, se resuelve el **tick del mundo**:
+   contagio interno, rutas terrestres/marítimas/aéreas, muertes, detección,
+   avance de la cura, ingresos y un evento mundial.
+
+### Los dos árboles
+| | Patógeno | Coalición |
+|---|---|---|
+| Recurso | **ADN** | **Fondos** |
+| Árbol | 28 mutaciones: transmisión, síntomas, resistencias | 12 doctrinas: contención, medicina, inteligencia |
+| Jugadas | 4 habilidades con recarga (brote, salto de vector, mutación espontánea, resembrar) | 12 acciones (investigar, cuarentena, cerrar aeropuertos, vacunar, ley marcial…) |
+| Gana si | muere el **60 %** del mundo | la **cura llega al 100 %** o erradica el brote |
+
+### Información oculta
+No es el mismo tablero para los dos. Esto es lo que **no** ve cada uno:
+
+- La **coalición** no ve los infectados de las regiones sin detectar (salen como
+  `?`), ni las mutaciones del rival hasta gastar en **Rastreo genético**.
+- El **patógeno** solo ve la cura **en tramos del 10 %**, y no sabe **dónde está
+  desplegada la vigilancia**.
+- Lo que planificas en una ronda no se le enseña al rival hasta que se resuelve.
+
+Las doctrinas de la coalición, en cambio, son **públicas**: el patógeno sabe a
+qué está jugando.
+
+### Equilibrio
+Medido con 700 partidas simuladas entre dos políticas heurísticas:
+
+| Patógeno | Coalición | Duración media | Decididas por límite de rondas |
+|---|---|---|---|
+| 50,7 % | 49,3 % | 27,5 rondas | 3,6 % |
+
+`npm test` incluye tests de equilibrio que fallan si un bando pasa a ganar más
+del 65 %, para que un retoque de fórmulas no rompa el juego en silencio.
+
+### Añadir contenido sin tocar el motor
+Todo el contenido es declarativo en `public/js/vector/const.js` (patrón tomado
+de los ficheros `.dat` de *Endgame: Singularity*). Una mutación nueva es un
+objeto más:
+
+```js
+prion: { name: 'Priones', branch: 'symptom', cost: 30, pre: ['coma'],
+         fx: { sev: 5, let: 6 }, desc: 'Plegamiento proteico irreversible.' },
+```
+
+El motor lee `cost`, `pre` y `fx` solo: no hay que tocar `models/vector/game.js`.
+
+### Archivos
+```
+models/vector/{game,io,player}.js    motor autoritativo, sockets y jugadores
+public/js/vector/{const,map,client,waiting}.js
+public/css/vector.css
+views/vector{,_login,_waiting}.html
+test/vector_*.test.js                52 tests (motor, niebla de guerra, equilibrio)
+```
+
+---
+
 ## Game Features
 - [x] Design your own map
 - [x] 2/3/4 Players
