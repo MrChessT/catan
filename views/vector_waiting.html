@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VECTOR — esperando jugadores</title>
+  <link rel="stylesheet" href="/css/vector.css">
+  <link rel="shortcut icon" type="image/jpg" href="/images/favicon.png" />
+</head>
+<body class="v-body">
+<div id="v-waiting">
+  <h1>VECTOR</h1>
+  <p class="v-tagline">Pásale esta clave a tu compañero.</p>
+
+  <div class="v-key" id="v-key" title="Clic para copiar">
+    <span>{{ game_id }}</span>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/>
+      <path d="M5 15V5a2 2 0 012-2h10"/></svg>
+  </div>
+  <div class="v-copied" id="v-copied">Clave copiada</div>
+
+  <p class="v-sub">O mándale el enlace directo:</p>
+  <div class="v-link" id="v-link"></div>
+
+  <div class="v-slots" id="v-slots"></div>
+  <p class="v-sub" id="v-status">Esperando…</p>
+  <p class="v-fine">Los bandos se sortean en cuanto entréis los dos.</p>
+  <a class="v-btn v-btn-ghost" href="/vector/logout">Salir</a>
+</div>
+
+<script>
+  window.V_GAME_ID = "{{ game_id }}"
+  window.V_PLAYERS = {{{ players }}}
+  window.V_PLAYER_COUNT = {{ player_count }}
+</script>
+<script src="/socket.io/socket.io.min.js"></script>
+<script src="/js/vector/waiting.js" type="module"></script>
+</body>

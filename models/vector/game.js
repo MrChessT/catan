@@ -7,6 +7,7 @@
  */
 import * as CONST from "../../public/js/vector/const.js"
 import VectorPlayer from "./player.js"
+import VectorIO from "./io.js"
 
 const {
   SIDES, GAME_STATES: ST, END_REASONS, GAME_CONFIG,
@@ -39,7 +40,7 @@ export default class VectorGame {
   constructor({ id, io = null, host, config = {}, onGameEnd = () => {} }) {
     this.id = id
     this.config = Object.assign({}, GAME_CONFIG, config)
-    this.#io = io
+    this.#io = io ? new VectorIO({ game: this, io }) : null
     this.#onGameEnd = onGameEnd
     this.#rng = mulberry32(this.config.seed || Math.floor(Math.random() * 1e9))
 
@@ -522,7 +523,7 @@ export default class VectorGame {
     Object.values(this.regions).forEach(r => {
       if (r.infected <= 0 || stats.let <= 0) return
       const cut = this.#mods.hospitals_off ? 0 : r.hospitals * (0.22 + (fx.hospital_cut || 0))
-      const rate = stats.let * 0.0045 * (1 - Math.min(0.8, cut))
+      const rate = stats.let * 0.006 * (1 - Math.min(0.8, cut))
       const deaths = Math.min(r.infected, Math.floor(r.infected * rate))
       r.infected -= deaths
       r.dead += deaths
@@ -540,12 +541,12 @@ export default class VectorGame {
   #runDetection(stats, fx, report) {
     Object.values(this.regions).forEach(r => {
       if (r.detected || r.infected <= 0) return
-      let score = stats.sev * 2.2 + (r.infected / REGIONS[r.id].pop) * 140
+      let score = stats.sev * 1.6 + (r.infected / REGIONS[r.id].pop) * 90
         + (r.surveillance ? 35 : 0) + (REGIONS[r.id].wealth - 1) * 6
-        + (fx.detection_bonus || 0) - stats.stealth * 3.2
+        + (fx.detection_bonus || 0) - stats.stealth * 4
       if (this.world_detected) score += 25
       if (this.#mods.force_detect) score = 100
-      if (this.#rng() * 100 >= clamp(score, 2, 96)) return
+      if (this.#rng() * 100 >= clamp(score, 1, 96)) return
       r.detected = true
       report.detected.push(r.id)
       if (!this.world_detected) {
@@ -563,7 +564,8 @@ export default class VectorGame {
     if (base <= 0) return
     const rich = this.#initial_rich ? this.#richPop() / this.#initial_rich : 1
     const drug = stats.drug * (1 - (fx.antiviral || 0))
-    this.cure = clamp(this.cure + base * (0.4 + 0.6 * rich) / (1 + drug * 0.15), 0, 100)
+    const rate = this.config.cure_rate ?? 1
+    this.cure = clamp(this.cure + base * rate * (0.4 + 0.6 * rich) / (1 + drug * 0.15), 0, 100)
   }
 
   #payIncome(before) {
@@ -571,7 +573,7 @@ export default class VectorGame {
     const new_inf = Math.max(0, this.total_infected + this.total_dead - before.infected - before.dead)
     const new_dead = Math.max(0, this.total_dead - before.dead)
     const new_regions = Math.max(0, Object.values(this.regions).filter(r => r.infected > 0).length - before.regions)
-    p.dna += 3 + new_regions * 4 + Math.floor(new_inf / 18) + Math.floor(new_dead / 12)
+    p.dna += 4 + new_regions * 4 + Math.floor(new_inf / 14) + Math.floor(new_dead / 10)
       + (this.#mods.free_dna || 0)
 
     const weighted = Object.values(this.regions).reduce((sum, r) => {
@@ -704,8 +706,10 @@ export default class VectorGame {
     Object.values(this.regions).forEach(r => {
       const pub = {
         id: r.id, detected: r.detected, quarantine: r.quarantine, hygiene: r.hygiene,
-        hospitals: r.hospitals, surveillance: r.surveillance, lab: r.lab, martial: r.martial,
+        hospitals: r.hospitals, lab: r.lab, martial: r.martial,
         airport_open: r.airport_open, port_open: r.port_open, dead: r.dead, immune: r.immune,
+        // La red de vigilancia es secreta: el patógeno no sabe dónde le esperan
+        surveillance: is_pathogen ? false : r.surveillance,
       }
       if (is_pathogen || r.detected) {
         regions[r.id] = { ...pub, infected: r.infected, healthy: this.#healthy(r), known: true }

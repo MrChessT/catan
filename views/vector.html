@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VECTOR</title>
+  <link rel="stylesheet" href="/css/vector.css">
+  <link rel="shortcut icon" type="image/jpg" href="/images/favicon.png" />
+</head>
+<body class="v-body v-playing">
+<div id="v-app">
+  <header class="v-top">
+    <div class="v-top-left">
+      <span class="v-logo">VECTOR</span>
+      <span class="v-side-tag" id="v-side-tag">…</span>
+      <span class="v-round">Ronda <b id="v-round">–</b><span id="v-maxround"></span></span>
+    </div>
+
+    <div class="v-gauges">
+      <div class="v-gauge v-gauge-dead">
+        <div class="v-gauge-head"><span>Mortandad</span><b id="v-dead-val">0 %</b></div>
+        <div class="v-bar"><i id="v-dead-bar"></i><u id="v-dead-goal"></u></div>
+      </div>
+      <div class="v-gauge v-gauge-cure">
+        <div class="v-gauge-head"><span>Cura</span><b id="v-cure-val">0 %</b></div>
+        <div class="v-bar"><i id="v-cure-bar"></i></div>
+      </div>
+    </div>
+
+    <div class="v-top-right">
+      <div class="v-stat" id="v-res" title="Tu reserva"></div>
+      <div class="v-stat" id="v-ap" title="Puntos de acción"></div>
+      <button id="v-commit" class="v-btn v-btn-primary">Confirmar</button>
+    </div>
+  </header>
+
+  <main class="v-main">
+    <section class="v-map-wrap" id="v-map"></section>
+    <aside class="v-panel" id="v-panel"></aside>
+  </main>
+
+  <div id="v-toast" class="v-toast"></div>
+  <div id="v-overlay" class="v-overlay hidden"></div>
+</div>
+
+<script>
+  window.V_GAME_ID = "{{ game_id }}"
+  window.V_PLAYER = {{{ player }}}
+  window.V_STATE = {{{ state }}}
+</script>
+<script src="/socket.io/socket.io.min.js"></script>
+<script src="/js/vector/client.js" type="module"></script>
+</body>

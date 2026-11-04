@@ -130,3 +130,18 @@ test('el informe de ronda llega a los dos bandos', () => {
   assert.equal(typeof report.deaths, 'number')
   assert.ok(Array.isArray(report.seeded))
 })
+
+test('la red de vigilancia de la coalición es secreta para el patógeno', () => {
+  const game = ready({ watch: ['avernon', 'jianto'] })
+  const p = stateFor(game, SIDES.PATHOGEN)
+  assert.equal(p.regions.avernon.surveillance, false, 'no puede saber dónde le vigilan')
+  assert.equal(p.regions.jianto.surveillance, false)
+  const c = stateFor(game, SIDES.COALITION)
+  assert.equal(c.regions.avernon.surveillance, true, 'la coalición sí ve la suya')
+})
+
+test('la coalición no filtra su vigilancia aunque prepare antes que el patógeno', () => {
+  const game = grant(ready(), {})
+  game.regions.sahree.surveillance = true
+  assert.equal(stateFor(game, SIDES.PATHOGEN).regions.sahree.surveillance, false)
+})

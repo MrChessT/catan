@@ -10,6 +10,7 @@ import { generate as generateRandomWords } from "random-words"
 import Game from "./models/game.js"
 import * as CONST from "./public/js/const.js"
 import BoardShuffler from "./public/js/board/board_shuffler.js"
+import VectorGame from "./models/vector/game.js"
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -137,18 +138,108 @@ app.get('/api/sessions/clear/:id?', function(req, res) {
   res.redirect('/api/sessions')
 })
 
+/* ────────────────────────────────── VECTOR (juego de pandemia) ──────────── */
+
+/** @type {Object.<string, VectorGame>} */
+const VECTOR_SESSIONS = {}
+
+function onVectorEnd(id) {
+  // Se deja un margen para que los dos jugadores vean la pantalla final
+  setTimeout(() => { delete VECTOR_SESSIONS[id] }, 10 * 60 * 1000)
+}
+
+const V_COOKIE = { maxAge: SESSION_EXPIRE_HOURS * 60 * 60 * 1000, httpOnly: true }
+
+app.get('/vector', function (req, res) {
+  const { game_id, name, notice } = req.query
+  res.clearCookie('v_game_id')
+  res.clearCookie('v_player_id')
+  if (notice) { return res.render('vector_login', { notice }) }
+  if (!game_id) { return res.render('vector_login') }
+
+  const game = VECTOR_SESSIONS[game_id]
+  if (!game) { return res.render('vector_login', { notice: 'No existe esa partida.' }) }
+  const player = game.join(name)
+  if (!player) { return res.redirect('/vector?notice=' + encodeURIComponent('La partida está llena.')) }
+
+  res.cookie('v_game_id', game.id, V_COOKIE)
+  res.cookie('v_player_id', player.id, V_COOKIE)
+  res.redirect(`/vector/${game.id}`)
+})
+
+app.get('/vector/new', function (req, res) {
+  let id
+  do { id = generateRandomWords({ min: 2, max: 2, join: '-' }) } while (VECTOR_SESSIONS[id])
+  const { name } = req.query
+  let config = {}
+  try { config = JSON.parse(decodeURIComponent(req.query.config)) } catch (e) {}
+
+  const game = new VectorGame({
+    id, io, host: { name }, config,
+    onGameEnd: _id => onVectorEnd(_id),
+  })
+  VECTOR_SESSIONS[id] = game
+  res.cookie('v_game_id', id, V_COOKIE)
+  res.cookie('v_player_id', 1, V_COOKIE)
+  res.redirect('/vector/' + id)
+})
+
+app.get('/vector/logout', function (req, res) {
+  const { v_game_id, v_player_id } = req.cookies
+  VECTOR_SESSIONS[v_game_id]?.removePlayer(+v_player_id)
+  res.clearCookie('v_game_id')
+  res.clearCookie('v_player_id')
+  res.redirect('/vector')
+})
+
+app.get('/vector/:id', function (req, res) {
+  const game_id = req.params.id
+  const game = VECTOR_SESSIONS[game_id]
+  if (!game_id || game_id !== req.cookies.v_game_id || !game) {
+    return res.redirect('/vector?notice=' + encodeURIComponent('Partida no encontrada.'))
+  }
+  const pid = +req.cookies.v_player_id
+  if (!pid || !game.hasPlayer(pid)) {
+    return res.redirect('/vector?notice=' + encodeURIComponent('No estás en esa partida.'))
+  }
+
+  if (!game.is_full) {
+    return res.render('vector_waiting', {
+      game_id,
+      player_count: game.player_count,
+      players: JSON.stringify(game.players.map(p => p.toJSON())),
+    })
+  }
+
+  const player = game.getPlayer(pid)
+  res.render('vector', {
+    game_id,
+    player: JSON.stringify(player.toJSON()),
+    state: JSON.stringify(game.getStateFor(player.side)),
+  })
+})
+
 const SOCK_INFO = {}
 io.on('connection', (socket) => {
-  let { game_id, player_id } = parseCookie(socket.handshake.headers.cookie || '')
+  const cookies = parseCookie(socket.handshake.headers.cookie || '')
+  let { game_id, player_id, v_game_id, v_player_id } = cookies
   player_id = +player_id
+  v_player_id = +v_player_id
+
   socket.join(game_id || -1)
   // Only setup socket events for the correct game
   GAME_SESSIONS[game_id]?.setUpPlayerSocket(player_id, socket)
-  SOCK_INFO[socket.id] = { game_id, player_id }
+
+  if (VECTOR_SESSIONS[v_game_id]) {
+    socket.join(v_game_id)
+    VECTOR_SESSIONS[v_game_id].setUpPlayerSocket(v_player_id, socket)
+  }
+  SOCK_INFO[socket.id] = { game_id, player_id, v_game_id, v_player_id }
 
   socket.on('disconnect', () => {
-    const { game_id, player_id } = SOCK_INFO[socket.id]
-    GAME_SESSIONS[game_id]?.removePlayerSocket(player_id, socket)
+    const info = SOCK_INFO[socket.id] || {}
+    GAME_SESSIONS[info.game_id]?.removePlayerSocket(info.player_id, socket)
+    VECTOR_SESSIONS[info.v_game_id]?.removePlayerSocket(info.v_player_id)
     delete SOCK_INFO[socket.id]
   })
 })

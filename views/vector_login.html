@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VECTOR — Patógeno contra Coalición</title>
+  <meta name="description" content="Juego de estrategia por turnos: un patógeno contra la coalición sanitaria mundial. Multijugador, para dos.">
+  <link rel="stylesheet" href="/css/vector.css">
+  <link rel="shortcut icon" type="image/jpg" href="/images/favicon.png" />
+</head>
+<body class="v-body">
+<div id="v-login">
+  <div class="v-brand">
+    <h1>VECTOR</h1>
+    <p class="v-tagline">Un patógeno. Una coalición sanitaria. Un mundo de 707 millones de personas.<br>
+      El bando se sortea al empezar: puede tocarte infectar o curar.</p>
+  </div>
+
+  {{#notice}}<div class="v-notice">{{notice}}</div>{{/notice}}
+
+  <div class="v-cards">
+    <form class="v-card" action="/vector/new" method="get">
+      <h2>Crear partida</h2>
+      <p>Creas la sala y le pasas la clave a tu compañero.</p>
+      <input name="name" placeholder="Tu nombre" maxlength="16" required autocomplete="off">
+      <button type="submit" class="v-btn v-btn-primary">Crear</button>
+    </form>
+
+    <form class="v-card" action="/vector" method="get">
+      <h2>Unirse</h2>
+      <p>Pega la clave de dos palabras que te han pasado.</p>
+      <input name="name" placeholder="Tu nombre" maxlength="16" required autocomplete="off">
+      <input name="game_id" placeholder="clave-partida" required autocomplete="off">
+      <button type="submit" class="v-btn">Entrar</button>
+    </form>
+  </div>
+
+  <div class="v-rules">
+    <h3>Cómo se juega</h3>
+    <ul>
+      <li><b>Rondas simultáneas.</b> Los dos planificáis a la vez. Cuando ambos confirmáis, el mundo avanza una ronda.</li>
+      <li><b>3 puntos de acción</b> por ronda y bando. Decide bien en qué los gastas.</li>
+      <li><b>El patógeno</b> gasta <b>ADN</b> en mutaciones: transmisión, síntomas y resistencias. Sus mutaciones están <b>ocultas</b>.</li>
+      <li><b>La coalición</b> gasta <b>Fondos</b> en doctrinas: contención, medicina e inteligencia. Las suyas son públicas.</li>
+      <li><b>Gana el patógeno</b> si muere el 60 % del mundo. <b>Gana la coalición</b> si la cura llega al 100 % o erradica el brote.</li>
+      <li>Para que sea justo, jugad <b>dos partidas</b>: con el sorteo os tocarán bandos distintos.</li>
+    </ul>
+  </div>
+</div>
+</body>

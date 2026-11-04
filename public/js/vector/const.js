@@ -38,6 +38,8 @@ export const GAME_CONFIG = {
   extinction_threshold: 60,
   /** segundos por ronda; 0 = sin límite */
   round_timer: 0,
+  /** multiplicador del avance de la cura: más bajo = partidas más largas */
+  cure_rate: 0.72,
   event_chance: 45,
   seed: 0,
 }
