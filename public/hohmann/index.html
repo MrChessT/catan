@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación de la maniobra de transferencia de Hohmann</title>
+<style>
+  :root {
+    --bg: #070b16;
+    --panel: #0f1626;
+    --panel2: #141d31;
+    --borde: #23304d;
+    --texto: #dbe4f5;
+    --tenue: #8b9abb;
+    --inicial: #4ea8ff;
+    --transfer: #ffd166;
+    --final: #ff7b54;
+    --nave: #7cf29a;
+    --objetivo: #e26dff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--texto);
+    font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  header { padding: 16px 20px 6px; }
+  header h1 { margin: 0; font-size: 22px; }
+  header p { margin: 4px 0 0; color: var(--tenue); }
+  .layout {
+    display: grid; gap: 14px; padding: 14px 20px 20px;
+    grid-template-columns: minmax(0, 1fr) 360px;
+  }
+  @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
+  .caja { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; }
+  .viz { position: relative; min-height: 520px; height: 70vh; overflow: hidden; }
+  #orbit { width: 100%; height: 100%; display: block; }
+  .leyenda {
+    position: absolute; left: 10px; bottom: 10px; background: rgba(7,11,22,.75);
+    border: 1px solid var(--borde); border-radius: 8px; padding: 6px 10px; font-size: 12px;
+  }
+  .leyenda span { display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; }
+  .leyenda i { width: 18px; height: 3px; display: inline-block; border-radius: 2px; }
+  .estado {
+    position: absolute; left: 10px; top: 10px; background: rgba(7,11,22,.75);
+    border: 1px solid var(--borde); border-radius: 8px; padding: 6px 10px; font-weight: 600;
+  }
+  .panel { padding: 12px 14px; display: flex; flex-direction: column; gap: 12px; }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--tenue); margin: 0 0 6px; }
+  .fila { display: flex; gap: 8px; align-items: center; margin: 5px 0; flex-wrap: wrap; }
+  .fila label { min-width: 92px; color: var(--tenue); }
+  select, input[type=number] {
+    background: var(--panel2); color: var(--texto); border: 1px solid var(--borde);
+    border-radius: 6px; padding: 5px 7px; font: inherit; flex: 1; min-width: 0;
+  }
+  input[type=range] { flex: 1; }
+  button {
+    background: #1f3a66; color: #fff; border: 1px solid #2f5390; border-radius: 6px;
+    padding: 6px 10px; font: inherit; cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: #28508d; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.encendido { background: #6b2b12; border-color: #b4501f; }
+  button.encendido:hover:not(:disabled) { background: #8f3a18; }
+  .nota { color: var(--tenue); font-size: 12px; }
+  table.datos { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  table.datos td { padding: 2px 0; border-bottom: 1px solid #1a2440; }
+  table.datos td:last-child { text-align: right; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .grafico { grid-column: 1 / -1; height: 210px; padding: 6px; }
+  #chart { width: 100%; height: 100%; display: block; }
+  .teoria { grid-column: 1 / -1; padding: 16px 20px; }
+  .teoria h2 { margin-top: 0; }
+  .teoria code, .f { font-family: ui-monospace, Menlo, Consolas, monospace; background: var(--panel2); padding: 1px 5px; border-radius: 4px; }
+  .teoria .formula { display: block; margin: 6px 0 10px 12px; padding: 6px 10px; background: var(--panel2); border-left: 3px solid var(--transfer); border-radius: 4px; font-family: ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; }
+  table.comp { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; margin-top: 8px; }
+  table.comp th, table.comp td { border: 1px solid var(--borde); padding: 5px 8px; text-align: right; }
+  table.comp th:first-child, table.comp td:first-child { text-align: left; }
+  table.comp th { background: var(--panel2); }
+  .ok { color: #7cf29a; } .mal { color: #ff8a8a; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Transferencia de Hohmann: simulación orbital</h1>
+  <p>Integración numérica (RK4) del problema de dos cuerpos con dos encendidos impulsivos: uno en el periapsis y otro en el apoapsis de la elipse de transferencia.</p>
+</header>
+
+<div class="layout">
+  <section class="caja viz">
+    <canvas id="orbit"></canvas>
+    <div class="estado" id="estado">Fase: órbita inicial</div>
+    <div class="leyenda">
+      <span><i style="background:var(--inicial)"></i>Órbita inicial r₁</span>
+      <span><i style="background:var(--transfer)"></i>Elipse de transferencia</span>
+      <span><i style="background:var(--final)"></i>Órbita final r₂</span>
+      <span><i style="background:var(--nave)"></i>Nave</span>
+      <span><i style="background:var(--objetivo)"></i>Objetivo</span>
+    </div>
+  </section>
+
+  <aside class="caja panel">
+    <div>
+      <h2>Escenario</h2>
+      <div class="fila"><label for="preset">Preajuste</label>
+        <select id="preset">
+          <option value="leo_geo">LEO (300 km) → GEO</option>
+          <option value="leo_gps">LEO (300 km) → órbita GPS (MEO)</option>
+          <option value="geo_leo">GEO → LEO (transferencia hacia dentro)</option>
+          <option value="tierra_marte" selected>Tierra → Marte</option>
+          <option value="tierra_venus">Tierra → Venus (hacia dentro)</option>
+          <option value="tierra_jupiter">Tierra → Júpiter</option>
+          <option value="custom">Personalizado</option>
+        </select>
+      </div>
+      <div class="fila"><label for="cuerpo">Cuerpo central</label>
+        <select id="cuerpo">
+          <option value="tierra">Tierra (μ = 398 600,4 km³/s²)</option>
+          <option value="sol">Sol (μ = 1,32712·10¹¹ km³/s²)</option>
+        </select>
+      </div>
+      <div class="fila"><label for="r1">r₁ (km)</label><input type="number" id="r1" min="1" step="any"></div>
+      <div class="fila"><label for="r2">r₂ (km)</label><input type="number" id="r2" min="1" step="any"></div>
+      <div class="nota" id="radiosInfo"></div>
+    </div>
+
+    <div>
+      <h2>Control</h2>
+      <div class="fila"><label for="modo">Modo</label>
+        <select id="modo">
+          <option value="auto">Automático (encendidos en el instante óptimo)</option>
+          <option value="manual">Manual (tú decides cuándo encender)</option>
+        </select>
+      </div>
+      <div class="fila"><label for="conObjetivo">Objetivo</label>
+        <input type="checkbox" id="conObjetivo" checked>
+        <span class="nota">Esperar a la ventana de lanzamiento (ángulo de fase) para encontrarse con el objetivo</span>
+      </div>
+      <div class="fila"><label for="velocidad">Velocidad</label>
+        <input type="range" id="velocidad" min="-1.5" max="1.6" step="0.01" value="0">
+        <span id="velTxt" class="nota" style="min-width:48px;text-align:right">×1</span>
+      </div>
+      <div class="fila">
+        <button id="btnPlay">⏸ Pausa</button>
+        <button id="btnReset">↺ Reiniciar</button>
+        <button id="btnFase">🎲 Fase aleatoria</button>
+      </div>
+      <div class="fila">
+        <button id="btnB1" class="encendido">🔥 Encendido 1 (Δv₁)</button>
+        <button id="btnB2" class="encendido">🔥 Encendido 2 (Δv₂)</button>
+      </div>
+      <div class="nota" id="modoNota"></div>
+    </div>
+
+    <div>
+      <h2>Plan de la maniobra (analítico)</h2>
+      <table class="datos" id="tablaPlan"></table>
+    </div>
+
+    <div>
+      <h2>Telemetría (simulación numérica)</h2>
+      <table class="datos" id="tablaTele"></table>
+    </div>
+  </aside>
+
+  <section class="caja grafico"><canvas id="chart"></canvas></section>
+
+  <section class="caja teoria">
+    <h2>¿Qué es la transferencia de Hohmann?</h2>
+    <p>Es la forma de pasar entre dos órbitas <b>circulares y coplanarias</b> de radios <span class="f">r₁</span> y <span class="f">r₂</span> que, con dos impulsos, gasta el mínimo Δv (siempre que <span class="f">r₂/r₁ &lt; 11,94</span>; por encima de ese cociente una transferencia bi-elíptica de tres impulsos puede ser más barata). La nave recorre media elipse cuyo periapsis toca la órbita interior y cuyo apoapsis toca la exterior. La propuso Walter Hohmann en 1925.</p>
+
+    <h3>1. Ecuación de vis-viva</h3>
+    <p>Todo sale de la conservación de la energía en una órbita kepleriana de semieje mayor <span class="f">a</span>:</p>
+    <span class="formula">v² = μ · (2/r − 1/a)</span>
+    <p>Para una órbita circular (<span class="f">a = r</span>) da <span class="f">v_circ = √(μ/r)</span>. La elipse de transferencia tiene <span class="f">a_t = (r₁ + r₂)/2</span> y excentricidad <span class="f">e_t = |r₂ − r₁| / (r₁ + r₂)</span>.</p>
+
+    <h3>2. Primer encendido (en r₁, periapsis de la elipse si r₂ &gt; r₁)</h3>
+    <span class="formula">v_p = √(μ·(2/r₁ − 1/a_t)) = √(μ/r₁) · √(2r₂/(r₁+r₂))
+Δv₁ = v_p − √(μ/r₁) = √(μ/r₁) · ( √(2r₂/(r₁+r₂)) − 1 )</span>
+
+    <h3>3. Segundo encendido (en r₂, apoapsis de la elipse)</h3>
+    <span class="formula">v_a = √(μ·(2/r₂ − 1/a_t)) = √(μ/r₂) · √(2r₁/(r₁+r₂))
+Δv₂ = √(μ/r₂) − v_a = √(μ/r₂) · ( 1 − √(2r₁/(r₁+r₂)) )</span>
+    <p>Si la transferencia es hacia dentro (r₂ &lt; r₁) las mismas fórmulas dan Δv negativos: los encendidos son <b>retrógrados</b> (frenan). El coste total es <span class="f">|Δv₁| + |Δv₂|</span>.</p>
+
+    <h3>4. Tiempo de vuelo</h3>
+    <p>Es medio periodo de la elipse (tercera ley de Kepler):</p>
+    <span class="formula">t_H = π · √(a_t³ / μ)</span>
+
+    <h3>5. Ángulo de fase y ventana de lanzamiento</h3>
+    <p>Para llegar al apoapsis justo cuando pasa el objetivo, éste debe ir <b>adelantado</b> un ángulo φ en el momento del primer encendido, porque durante <span class="f">t_H</span> la nave barre 180° y el objetivo avanza <span class="f">n₂·t_H</span>:</p>
+    <span class="formula">φ = π − n₂ · t_H,   con  n₂ = √(μ/r₂³)  (movimiento medio del objetivo)</span>
+    <p>Como nave y objetivo giran a ritmos distintos, ese ángulo se repite cada <b>periodo sinódico</b> <span class="f">S = 2π / |n₁ − n₂|</span>. Para Tierra–Marte, S ≈ 780 días: por eso las misiones a Marte salen cada ~26 meses. En el simulador, con el «Objetivo» activado, la nave espera en su órbita hasta que el ángulo de fase es el correcto.</p>
+
+    <h3>6. Qué hace exactamente el simulador</h3>
+    <ul>
+      <li>Integra <span class="f">r̈ = −μ r / |r|³</span> con Runge–Kutta de 4º orden en unidades reales (km, s), con un paso de ~1/2000 del periodo más corto.</li>
+      <li>Los encendidos son impulsivos: se suma Δv a lo largo del vector velocidad (prógrado si Δv &gt; 0, retrógrado si Δv &lt; 0). En modo automático el integrador se detiene exactamente en los instantes <span class="f">t₁</span> y <span class="f">t₁ + t_H</span>.</li>
+      <li>La telemetría calcula en cada fotograma los <b>elementos osculadores</b> a partir del estado (r, v): energía específica <span class="f">ε = v²/2 − μ/r</span>, <span class="f">a = −μ/(2ε)</span>, <span class="f">h = x·v_y − y·v_x</span>, <span class="f">e = √(1 + 2εh²/μ²)</span>. Así ves cómo la excentricidad pasa de 0 a e_t y vuelve a 0.</li>
+      <li>El «error de energía» compara la energía numérica con la teórica de la fase actual: mide la precisión del integrador.</li>
+      <li>En modo manual puedes encender a destiempo: verás que si el segundo impulso no se da en el apoapsis la órbita final queda elíptica (e ≠ 0).</li>
+    </ul>
+
+    <h3>Tabla comparativa de los preajustes</h3>
+    <div id="tablaComp"></div>
+  </section>
+</div>
+
+<script>
+"use strict";
+// ---------------------------------------------------------------------------
+// Datos físicos
+// ---------------------------------------------------------------------------
+const AU = 149597870.7; // km
+const CUERPOS = {
+  tierra: { nombre: "Tierra", mu: 398600.4418, R: 6371.0, color: "#3b82f6" },
+  sol:    { nombre: "Sol",    mu: 1.32712440018e11, R: 696340, color: "#fbbf24" },
+};
+const PRESETS = {
+  leo_geo:        { nombre: "LEO 300 km → GEO",  cuerpo: "tierra", r1: 6671,  r2: 42164, origen: null,      objetivo: "Satélite GEO" },
+  leo_gps:        { nombre: "LEO 300 km → GPS",  cuerpo: "tierra", r1: 6671,  r2: 26560, origen: null,      objetivo: "Satélite GPS" },
+  geo_leo:        { nombre: "GEO → LEO 300 km",  cuerpo: "tierra", r1: 42164, r2: 6671,  origen: null,      objetivo: "Estación en LEO" },
+  tierra_marte:   { nombre: "Tierra → Marte",    cuerpo: "sol", r1: 1.000000 * AU, r2: 1.523679 * AU, origen: "Tierra", objetivo: "Marte" },
+  tierra_venus:   { nombre: "Tierra → Venus",    cuerpo: "sol", r1: 1.000000 * AU, r2: 0.723332 * AU, origen: "Tierra", objetivo: "Venus" },
+  tierra_jupiter: { nombre: "Tierra → Júpiter",  cuerpo: "sol", r1: 1.000000 * AU, r2: 5.2026 * AU,   origen: "Tierra", objetivo: "Júpiter" },
+};
+
+// ---------------------------------------------------------------------------
+// Plan analítico de Hohmann
+// ---------------------------------------------------------------------------
+function planHohmann(mu, r1, r2) {
+  const at = (r1 + r2) / 2;
+  const vc1 = Math.sqrt(mu / r1), vc2 = Math.sqrt(mu / r2);
+  const vT1 = Math.sqrt(mu * (2 / r1 - 1 / at));   // velocidad en la elipse en r1
+  const vT2 = Math.sqrt(mu * (2 / r2 - 1 / at));   // velocidad en la elipse en r2
+  const dv1 = vT1 - vc1, dv2 = vc2 - vT2;
+  const tH = Math.PI * Math.sqrt(at ** 3 / mu);
+  const et = Math.abs(r2 - r1) / (r1 + r2);
+  const n1 = Math.sqrt(mu / r1 ** 3), n2 = Math.sqrt(mu / r2 ** 3);
+  const fase = Math.PI - n2 * tH;                  // adelanto necesario del objetivo
+  const T1 = 2 * Math.PI / n1, T2 = 2 * Math.PI / n2;
+  const S = 2 * Math.PI / Math.abs(n1 - n2);
+  return { mu, r1, r2, at, vc1, vc2, vT1, vT2, dv1, dv2, dvTot: Math.abs(dv1) + Math.abs(dv2),
+           tH, et, n1, n2, fase, T1, T2, S, eps: -mu / (2 * at) };
+}
+
+// ---------------------------------------------------------------------------
+// Utilidades de formato
+// ---------------------------------------------------------------------------
+const nf = (x, d = 0) => x.toLocaleString("es-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
+function fmtT(s) {
+  const neg = s < 0; s = Math.abs(s);
+  let out;
+  if (s < 3600) out = `${Math.floor(s / 60)} min ${nf(s % 60, 0)} s`;
+  else if (s < 86400 * 3) out = `${Math.floor(s / 3600)} h ${nf(Math.floor((s % 3600) / 60))} min`;
+  else if (s < 86400 * 730) out = `${nf(s / 86400, 1)} días`;
+  else out = `${nf(s / 86400 / 365.25, 2)} años`;
+  return (neg ? "−" : "") + out;
+}
+function fmtD(km) {
+  if (km > 5e6) return `${nf(km / 1e6, 2)}·10⁶ km (${nf(km / AU, 3)} UA)`;
+  return `${nf(km, 0)} km`;
+}
+const fmtV = v => `${nf(v, 3)} km/s`;
+const deg = r => r * 180 / Math.PI;
+const wrapPi = a => { a = ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI; return a; };
+const wrap2Pi = a => ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+
+// ---------------------------------------------------------------------------
+// Estado de la simulación
+// ---------------------------------------------------------------------------
+const $ = id => document.getElementById(id);
+let cfg, P, sim;
+let corriendo = true;
+let L0 = null;           // ángulo inicial objetivo − nave (rad)
+const TH0 = 0;           // ángulo inicial de la nave
+
+function leerConfig() {
+  const cuerpo = CUERPOS[$("cuerpo").value];
+  const r1 = parseFloat($("r1").value), r2 = parseFloat($("r2").value);
+  const key = $("preset").value;
+  const pr = PRESETS[key] || { origen: null, objetivo: "Objetivo" };
+  return { cuerpo, r1, r2, origen: pr.origen, objetivoNombre: pr.objetivo,
+           modo: $("modo").value, conObjetivo: $("conObjetivo").checked };
+}
+
+function validar(c) {
+  if (!(c.r1 > 0 && c.r2 > 0)) return "Los radios deben ser positivos.";
+  if (Math.abs(c.r1 - c.r2) / c.r1 < 1e-3) return "r₁ y r₂ deben ser distintos.";
+  if (Math.min(c.r1, c.r2) <= c.cuerpo.R) return `Los radios deben ser mayores que el radio del ${c.cuerpo.nombre} (${nf(c.cuerpo.R)} km).`;
+  return null;
+}
+
+function reiniciar(nuevaFase = false) {
+  cfg = leerConfig();
+  const err = validar(cfg);
+  if (err) { $("modoNota").innerHTML = `<span class="mal">${err}</span>`; return; }
+  P = planHohmann(cfg.cuerpo.mu, cfg.r1, cfg.r2);
+  const k = P.n2 - P.n1;
+  // Por defecto el objetivo empieza colocado para que la ventana se abra a 0,35 vueltas.
+  if (L0 === null || !nuevaFase) L0 = wrap2Pi(P.fase - k * 0.35 * P.T1);
+  let tEspera;
+  if (cfg.conObjetivo) {
+    tEspera = (P.fase - L0) / k;
+    tEspera = ((tEspera % P.S) + P.S) % P.S;
+  } else {
+    tEspera = 0.35 * P.T1;
+  }
+  const v = P.vc1;
+  sim = {
+    t: 0,
+    x: cfg.r1 * Math.cos(TH0), y: cfg.r1 * Math.sin(TH0),
+    vx: -v * Math.sin(TH0),    vy: v * Math.cos(TH0),
+    fase: 0,                  // 0 = órbita inicial, 1 = transferencia, 2 = órbita final
+    tB1: cfg.modo === "auto" ? tEspera : null,
+    tB2: cfg.modo === "auto" ? tEspera + P.tH : null,
+    tB1real: null, tB2real: null,
+    angB1: null, posB1: null, posB2: null,
+    estela: [], muestras: [],
+    h: Math.min(P.T1, P.T2) / 2000,
+    distLlegada: null,
+    flash: [],
+    epsEsperada: -P.mu / (2 * cfg.r1),
+    tEspera,
+  };
+  // Ritmo base de reproducción: espera + transferencia duran ~12 s reales a ×1.
+  sim.base = (P.tH + tEspera) / 12;
+  registrarMuestra();
+  pintarPlan();
+  actualizarBotones();
+  $("modoNota").textContent = cfg.modo === "auto"
+    ? "Los encendidos se aplican solos en el instante óptimo calculado."
+    : "Pulsa «Encendido 1» cuando quieras (lo ideal: cuando el ángulo de fase coincida) y «Encendido 2» al llegar al apoapsis.";
+}
+
+// ---------------------------------------------------------------------------
+// Integrador RK4 del problema de dos cuerpos
+// ---------------------------------------------------------------------------
+function deriv(s, mu) {
+  const r2 = s[0] * s[0] + s[1] * s[1];
+  const r3 = r2 * Math.sqrt(r2);
+  return [s[2], s[3], -mu * s[0] / r3, -mu * s[1] / r3];
+}
+function rk4(dt) {
+  const mu = P.mu;
+  const s = [sim.x, sim.y, sim.vx, sim.vy];
+  const k1 = deriv(s, mu);
+  const s2 = s.map((v, i) => v + 0.5 * dt * k1[i]);
+  const k2 = deriv(s2, mu);
+  const s3 = s.map((v, i) => v + 0.5 * dt * k2[i]);
+  const k3 = deriv(s3, mu);
+  const s4 = s.map((v, i) => v + dt * k3[i]);
+  const k4 = deriv(s4, mu);
+  const n = s.map((v, i) => v + dt / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
+  sim.x = n[0]; sim.y = n[1]; sim.vx = n[2]; sim.vy = n[3]; sim.t += dt;
+}
+
+function encender(dv) {
+  const v = Math.hypot(sim.vx, sim.vy);
+  sim.vx += dv * sim.vx / v;
+  sim.vy += dv * sim.vy / v;
+}
+
+function encendido1() {
+  if (sim.fase !== 0) return;
+  encender(P.dv1);
+  sim.fase = 1;
+  sim.tB1real = sim.t;
+  sim.angB1 = Math.atan2(sim.y, sim.x);
+  sim.posB1 = [sim.x, sim.y];
+  sim.flash.push({ x: sim.x, y: sim.y, t0: performance.now(), txt: `Δv₁ = ${nf(P.dv1, 3)} km/s` });
+  sim.epsEsperada = P.eps;
+  registrarMuestra(true);
+  actualizarBotones();
+}
+function encendido2() {
+  if (sim.fase !== 1) return;
+  encender(P.dv2);
+  sim.fase = 2;
+  sim.tB2real = sim.t;
+  sim.posB2 = [sim.x, sim.y];
+  sim.flash.push({ x: sim.x, y: sim.y, t0: performance.now(), txt: `Δv₂ = ${nf(P.dv2, 3)} km/s` });
+  sim.epsEsperada = -P.mu / (2 * P.r2);
+  if (cfg.conObjetivo) {
+    const [tx, ty] = posObjetivo(sim.t);
+    sim.distLlegada = Math.hypot(tx - sim.x, ty - sim.y);
+  }
+  registrarMuestra(true);
+  actualizarBotones();
+}
+
+function posObjetivo(t) {
+  const a = TH0 + L0 + P.n2 * t;
+  return [P.r2 * Math.cos(a), P.r2 * Math.sin(a)];
+}
+function posOrigen(t) {
+  const a = TH0 + P.n1 * t;
+  return [P.r1 * Math.cos(a), P.r1 * Math.sin(a)];
+}
+
+function registrarMuestra(forzar = false) {
+  const m = sim.muestras;
+  const r = Math.hypot(sim.x, sim.y), v = Math.hypot(sim.vx, sim.vy);
+  if (!forzar && m.length && sim.t - m[m.length - 1].t < sim.base / 400) return;
+  m.push({ t: sim.t, r, v });
+  if (m.length > 6000) m.splice(0, m.length - 6000);
+}
+
+function avanzar(dtSim) {
+  const tFin = sim.t + dtSim;
+  let pasos = 0;
+  while (sim.t < tFin && pasos < 20000) {
+    let dt = Math.min(sim.h, tFin - sim.t);
+    // No saltarse los instantes de encendido programados.
+    if (sim.fase === 0 && sim.tB1 !== null && sim.t + dt >= sim.tB1) dt = sim.tB1 - sim.t;
+    if (sim.fase === 1 && sim.tB2 !== null && sim.t + dt >= sim.tB2) dt = sim.tB2 - sim.t;
+    if (dt > 0) rk4(dt);
+    if (sim.fase === 0 && sim.tB1 !== null && sim.t >= sim.tB1 - 1e-9) encendido1();
+    if (sim.fase === 1 && sim.tB2 !== null && sim.t >= sim.tB2 - 1e-9) encendido2();
+    // Estela
+    const e = sim.estela, last = e[e.length - 1];
+    const umbral = Math.max(P.r1, P.r2) * 0.004;
+    if (!last || Math.hypot(sim.x - last.x, sim.y - last.y) > umbral) {
+      e.push({ x: sim.x, y: sim.y, f: sim.fase });
+      if (e.length > 5000) e.shift();
+    }
+    registrarMuestra();
+    pasos++;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Elementos osculadores
+// ---------------------------------------------------------------------------
+function elementos() {
+  const mu = P.mu;
+  const r = Math.hypot(sim.x, sim.y), v = Math.hypot(sim.vx, sim.vy);
+  const eps = v * v / 2 - mu / r;
+  const h = sim.x * sim.vy - sim.y * sim.vx;
+  const a = -mu / (2 * eps);
+  const e = Math.sqrt(Math.max(0, 1 + 2 * eps * h * h / (mu * mu)));
+  return { r, v, eps, h, a, e, rp: a * (1 - e), ra: a * (1 + e) };
+}
+
+// ---------------------------------------------------------------------------
+// Dibujo
+// ---------------------------------------------------------------------------
+const cv = $("orbit"), ctx = cv.getContext("2d");
+const ch = $("chart"), cctx = ch.getContext("2d");
+let W = 0, H = 0, CW = 0, CH = 0;
+let estrellas = [];
+function redimensionar() {
+  const dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect();
+  W = r.width; H = r.height;
+  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const rc = ch.getBoundingClientRect();
+  CW = rc.width; CH = rc.height;
+  ch.width = Math.round(CW * dpr); ch.height = Math.round(CH * dpr);
+  cctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  estrellas = Array.from({ length: 260 }, () => ({ x: Math.random() * W, y: Math.random() * H, b: Math.random() }));
+}
+window.addEventListener("resize", redimensionar);
+
+function escala() { return (Math.min(W, H) / 2 * 0.9) / (Math.max(P.r1, P.r2) * 1.05); }
+function aPantalla(x, y, s) { return [W / 2 + x * s, H / 2 - y * s]; }
+
+function circulo(r, s, color, dash) {
+  ctx.beginPath();
+  ctx.setLineDash(dash || []);
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5;
+  ctx.arc(W / 2, H / 2, r * s, 0, 2 * Math.PI);
+  ctx.stroke(); ctx.setLineDash([]);
+}
+
+// Media elipse de Hohmann que parte del ángulo angSalida.
+function puntosElipse(angSalida, desde, hasta) {
+  const at = P.at, e = P.et, p = at * (1 - e * e);
+  const haciaFuera = P.r2 > P.r1;
+  // ω: dirección del periapsis.
+  const w = haciaFuera ? angSalida : angSalida + Math.PI;
+  const pts = [];
+  const N = 240;
+  for (let i = 0; i <= N; i++) {
+    const nuRel = desde + (hasta - desde) * i / N;     // ángulo recorrido desde el punto de salida
+    const nu = haciaFuera ? nuRel : nuRel + Math.PI;    // anomalía verdadera
+    const r = p / (1 + e * Math.cos(nu));
+    pts.push([r * Math.cos(w + nu), r * Math.sin(w + nu)]);
+  }
+  return pts;
+}
+function trazar(pts, s, color, ancho, dash) {
+  ctx.beginPath(); ctx.setLineDash(dash || []);
+  pts.forEach(([x, y], i) => { const [X, Y] = aPantalla(x, y, s); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); });
+  ctx.strokeStyle = color; ctx.lineWidth = ancho; ctx.stroke(); ctx.setLineDash([]);
+}
+function etiqueta(txt, X, Y, color, align = "left") {
+  ctx.font = "12px system-ui, sans-serif"; ctx.textAlign = align;
+  ctx.fillStyle = "rgba(7,11,22,.65)";
+  const w = ctx.measureText(txt).width;
+  const x0 = align === "left" ? X : align === "center" ? X - w / 2 : X - w;
+  ctx.fillRect(x0 - 3, Y - 12, w + 6, 16);
+  ctx.fillStyle = color; ctx.fillText(txt, X, Y);
+}
+
+function dibujar() {
+  ctx.clearRect(0, 0, W, H);
+  for (const st of estrellas) { ctx.fillStyle = `rgba(255,255,255,${0.15 + 0.5 * st.b})`; ctx.fillRect(st.x, st.y, 1.2, 1.2); }
+  if (!P) return;
+  const s = escala();
+
+  // Cuerpo central
+  const Rpx = Math.max(cfg.cuerpo.R * s, 7);
+  if (cfg.cuerpo === CUERPOS.sol) {
+    const g = ctx.createRadialGradient(W / 2, H / 2, 0, W / 2, H / 2, Rpx * 4);
+    g.addColorStop(0, "rgba(255,210,90,.9)"); g.addColorStop(1, "rgba(255,170,40,0)");
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(W / 2, H / 2, Rpx * 4, 0, 2 * Math.PI); ctx.fill();
+  }
+  ctx.fillStyle = cfg.cuerpo.color; ctx.beginPath(); ctx.arc(W / 2, H / 2, Rpx, 0, 2 * Math.PI); ctx.fill();
+  etiqueta(cfg.cuerpo.nombre, W / 2, H / 2 + Rpx + 16, "#c9d6ee", "center");
+
+  // Órbitas circulares
+  circulo(P.r1, s, "rgba(78,168,255,.75)", [6, 5]);
+  circulo(P.r2, s, "rgba(255,123,84,.75)", [6, 5]);
+
+  // Elipse de transferencia
+  let angSalida;
+  if (sim.fase === 0) {
+    angSalida = sim.tB1 !== null ? TH0 + P.n1 * sim.tB1 : Math.atan2(sim.y, sim.x);
+    trazar(puntosElipse(angSalida, 0, Math.PI), s, "rgba(255,209,102,.45)", 1.5, [3, 5]);
+    const [X, Y] = aPantalla(P.r1 * Math.cos(angSalida), P.r1 * Math.sin(angSalida), s);
+    ctx.strokeStyle = "rgba(255,209,102,.9)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(X, Y, 6, 0, 2 * Math.PI); ctx.stroke();
+    etiqueta(cfg.modo === "auto" ? "Punto del encendido 1" : "Elipse si enciendes ahora", X + 9, Y - 6, "#ffd166");
+  } else {
+    angSalida = sim.angB1;
+    trazar(puntosElipse(angSalida, 0, 2 * Math.PI), s, "rgba(255,209,102,.18)", 1, [2, 6]);
+    trazar(puntosElipse(angSalida, 0, Math.PI), s, "rgba(255,209,102,.8)", 1.8);
+  }
+  // Línea de ápsides
+  {
+    const [X1, Y1] = aPantalla(P.r1 * Math.cos(angSalida), P.r1 * Math.sin(angSalida), s);
+    const [X2, Y2] = aPantalla(-P.r2 * Math.cos(angSalida), -P.r2 * Math.sin(angSalida), s);
+    ctx.setLineDash([2, 4]); ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(X1, Y1); ctx.lineTo(X2, Y2); ctx.stroke(); ctx.setLineDash([]);
+    etiqueta(P.r2 > P.r1 ? "apoapsis" : "periapsis", X2 + 8, Y2 + 4, "rgba(255,209,102,.9)");
+  }
+
+  // Estela
+  const colores = ["#4ea8ff", "#ffd166", "#ff7b54"];
+  const e = sim.estela;
+  for (let i = 1; i < e.length; i++) {
+    const [X0, Y0] = aPantalla(e[i - 1].x, e[i - 1].y, s);
+    const [X1, Y1] = aPantalla(e[i].x, e[i].y, s);
+    ctx.strokeStyle = colores[e[i].f]; ctx.globalAlpha = 0.25 + 0.75 * i / e.length; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(X0, Y0); ctx.lineTo(X1, Y1); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+
+  // Cuerpo de origen (Tierra en los casos interplanetarios)
+  if (cfg.origen) {
+    const [ox, oy] = posOrigen(sim.t);
+    const [X, Y] = aPantalla(ox, oy, s);
+    ctx.fillStyle = "#3b82f6"; ctx.beginPath(); ctx.arc(X, Y, 6, 0, 2 * Math.PI); ctx.fill();
+    etiqueta(cfg.origen, X + 9, Y + 16, "#8ec5ff");
+  }
+
+  // Objetivo y ángulo de fase
+  if (cfg.conObjetivo) {
+    const [tx, ty] = posObjetivo(sim.t);
+    const [X, Y] = aPantalla(tx, ty, s);
+    ctx.fillStyle = "#e26dff"; ctx.beginPath(); ctx.arc(X, Y, 6, 0, 2 * Math.PI); ctx.fill();
+    etiqueta(cfg.objetivoNombre, X + 9, Y - 8, "#f0b2ff");
+    if (sim.fase === 0) {
+      // Arco del ángulo de fase actual (nave → objetivo)
+      const angN = Math.atan2(sim.y, sim.x);
+      const lead = wrapPi(Math.atan2(ty, tx) - angN);
+      const rr = Math.min(P.r1, P.r2) * s * 0.55;
+      ctx.strokeStyle = "rgba(226,109,255,.8)"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(W / 2, H / 2, rr, -angN, -(angN + lead), lead > 0); ctx.stroke();
+      // Arco del ángulo de fase requerido
+      ctx.strokeStyle = "rgba(255,209,102,.55)"; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.arc(W / 2, H / 2, rr * 0.85, -angN, -(angN + wrapPi(P.fase)), wrapPi(P.fase) > 0); ctx.stroke();
+      ctx.setLineDash([]);
+      [[angN, "rgba(124,242,154,.4)"], [Math.atan2(ty, tx), "rgba(226,109,255,.4)"]].forEach(([a, c]) => {
+        ctx.strokeStyle = c; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(W / 2, H / 2);
+        ctx.lineTo(W / 2 + Math.cos(a) * rr * 1.25, H / 2 - Math.sin(a) * rr * 1.25); ctx.stroke();
+      });
+      etiqueta(`fase actual ${nf(deg(lead), 1)}° · requerida ${nf(deg(wrapPi(P.fase)), 1)}°`, W / 2, H / 2 - Rpx - 14 - (cfg.cuerpo === CUERPOS.sol ? 22 : 8), "#f0b2ff", "center");
+    }
+  }
+
+  // Destellos de los encendidos
+  const ahora = performance.now();
+  for (const f of sim.flash) {
+    const [X, Y] = aPantalla(f.x, f.y, s);
+    const edad = (ahora - f.t0) / 1000;
+    if (edad < 1.2) {
+      ctx.strokeStyle = `rgba(255,150,60,${1 - edad / 1.2})`; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(X, Y, 6 + edad * 40, 0, 2 * Math.PI); ctx.stroke();
+    }
+    ctx.fillStyle = "#ff9a3c"; ctx.beginPath(); ctx.arc(X, Y, 4, 0, 2 * Math.PI); ctx.fill();
+    etiqueta(f.txt, X + 8, Y + 18, "#ffb27a");
+  }
+
+  // Nave + vector velocidad
+  const [NX, NY] = aPantalla(sim.x, sim.y, s);
+  const v = Math.hypot(sim.vx, sim.vy);
+  const ux = sim.vx / v, uy = sim.vy / v;
+  const largo = 22 + 40 * v / Math.max(P.vT1, P.vT2, P.vc1, P.vc2);
+  ctx.strokeStyle = "#7cf29a"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(NX, NY); ctx.lineTo(NX + ux * largo, NY - uy * largo); ctx.stroke();
+  const ang = Math.atan2(-uy, ux);
+  ctx.save(); ctx.translate(NX, NY); ctx.rotate(ang);
+  ctx.fillStyle = "#7cf29a"; ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-6, 5); ctx.lineTo(-3, 0); ctx.lineTo(-6, -5); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.save(); ctx.translate(NX + ux * largo, NY - uy * largo); ctx.rotate(ang);
+  ctx.fillStyle = "#7cf29a"; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-7, 4); ctx.lineTo(-7, -4); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  etiqueta(`v = ${nf(v, 2)} km/s`, NX + ux * largo + 6, NY - uy * largo - 6, "#a6f7bb");
+}
+
+function dibujarGrafico() {
+  cctx.clearRect(0, 0, CW, CH);
+  const m = sim.muestras;
+  if (m.length < 2) return;
+  const pad = { l: 58, r: 58, t: 22, b: 26 };
+  const w = CW - pad.l - pad.r, h = CH - pad.t - pad.b;
+  const tMax = Math.max(sim.t, (sim.tB2 ?? sim.t) * 1.15, 1e-9);
+  let vMin = Infinity, vMax = -Infinity;
+  for (const p of m) { vMin = Math.min(vMin, p.v); vMax = Math.max(vMax, p.v); }
+  [P.vc1, P.vc2, P.vT1, P.vT2].forEach(x => { vMin = Math.min(vMin, x); vMax = Math.max(vMax, x); });
+  const rMin = Math.min(P.r1, P.r2) * 0.95, rMax = Math.max(P.r1, P.r2) * 1.05;
+  const vm = (vMax - vMin) * 0.08; vMin -= vm; vMax += vm;
+  const X = t => pad.l + w * t / tMax;
+  const Yv = v => pad.t + h * (1 - (v - vMin) / (vMax - vMin));
+  const Yr = r => pad.t + h * (1 - (r - rMin) / (rMax - rMin));
+
+  cctx.strokeStyle = "#23304d"; cctx.lineWidth = 1;
+  cctx.strokeRect(pad.l, pad.t, w, h);
+  cctx.font = "11px system-ui, sans-serif"; cctx.fillStyle = "#8b9abb";
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + h * i / 4;
+    cctx.strokeStyle = "rgba(35,48,77,.6)"; cctx.beginPath(); cctx.moveTo(pad.l, y); cctx.lineTo(pad.l + w, y); cctx.stroke();
+    cctx.textAlign = "right"; cctx.fillStyle = "#7cf29a";
+    cctx.fillText(nf(vMax - (vMax - vMin) * i / 4, 2), pad.l - 6, y + 4);
+    cctx.textAlign = "left"; cctx.fillStyle = "#c9a7ff";
+    const rv = rMax - (rMax - rMin) * i / 4;
+    cctx.fillText(rv > 5e6 ? nf(rv / AU, 2) + " UA" : nf(rv / 1000, 1) + "k", pad.l + w + 6, y + 4);
+  }
+  cctx.fillStyle = "#7cf29a"; cctx.textAlign = "left"; cctx.fillText("velocidad (km/s)", pad.l, 14);
+  cctx.fillStyle = "#c9a7ff"; cctx.textAlign = "right"; cctx.fillText(P.r1 > 5e6 ? "distancia r" : "distancia r (km)", pad.l + w, 14);
+  cctx.fillStyle = "#8b9abb"; cctx.textAlign = "center"; cctx.fillText(`tiempo (0 – ${fmtT(tMax)})`, pad.l + w / 2, CH - 6);
+
+  // Encendidos
+  [[sim.tB1real ?? sim.tB1, "Δv₁"], [sim.tB2real ?? sim.tB2, "Δv₂"]].forEach(([t, txt]) => {
+    if (t == null) return;
+    cctx.strokeStyle = "rgba(255,154,60,.7)"; cctx.setLineDash([4, 4]);
+    cctx.beginPath(); cctx.moveTo(X(t), pad.t); cctx.lineTo(X(t), pad.t + h); cctx.stroke(); cctx.setLineDash([]);
+    cctx.fillStyle = "#ffb27a"; cctx.textAlign = "center"; cctx.fillText(txt, X(t), pad.t - 4);
+  });
+
+  const linea = (f, color) => {
+    cctx.beginPath();
+    m.forEach((p, i) => { const x = X(p.t), y = f(p); i ? cctx.lineTo(x, y) : cctx.moveTo(x, y); });
+    cctx.strokeStyle = color; cctx.lineWidth = 2; cctx.stroke();
+  };
+  linea(p => Yr(p.r), "#c9a7ff");
+  linea(p => Yv(p.v), "#7cf29a");
+}
+
+// ---------------------------------------------------------------------------
+// Paneles de datos
+// ---------------------------------------------------------------------------
+function filas(arr) { return arr.map(([k, v, cls]) => `<tr><td>${k}</td><td class="${cls || ""}">${v}</td></tr>`).join(""); }
+
+function pintarPlan() {
+  const haciaFuera = P.r2 > P.r1;
+  $("tablaPlan").innerHTML = filas([
+    ["Velocidad circular en r₁", fmtV(P.vc1)],
+    ["Velocidad circular en r₂", fmtV(P.vc2)],
+    ["Semieje mayor a_t", fmtD(P.at)],
+    ["Excentricidad e_t", nf(P.et, 4)],
+    [`v en ${haciaFuera ? "periapsis" : "apoapsis"} (r₁)`, fmtV(P.vT1)],
+    [`v en ${haciaFuera ? "apoapsis" : "periapsis"} (r₂)`, fmtV(P.vT2)],
+    [`Δv₁ (${P.dv1 >= 0 ? "prógrado" : "retrógrado"})`, fmtV(P.dv1)],
+    [`Δv₂ (${P.dv2 >= 0 ? "prógrado" : "retrógrado"})`, fmtV(P.dv2)],
+    ["Δv total", `<b>${fmtV(P.dvTot)}</b>`],
+    ["Tiempo de transferencia t_H", fmtT(P.tH)],
+    ["Periodo órbita inicial T₁", fmtT(P.T1)],
+    ["Periodo órbita final T₂", fmtT(P.T2)],
+    ["Ángulo de fase requerido φ", `${nf(deg(wrapPi(P.fase)), 2)}°`],
+    ["Periodo sinódico S", fmtT(P.S)],
+    ["Espera hasta el encendido 1", cfg.modo === "auto" ? fmtT(sim.tEspera) : "manual"],
+  ]);
+  const ri = $("radiosInfo");
+  const alt = r => cfg.cuerpo === CUERPOS.tierra ? `altitud ${nf(r - cfg.cuerpo.R)} km` : `${nf(r / AU, 4)} UA`;
+  ri.textContent = `r₁: ${alt(cfg.r1)} · r₂: ${alt(cfg.r2)} · cociente r₂/r₁ = ${nf(cfg.r2 / cfg.r1, 3)}`;
+}
+
+function pintarTele() {
+  const el = elementos();
+  const nombreFase = ["Órbita inicial (esperando)", "Transferencia (media elipse)", "Órbita final"][sim.fase];
+  const errE = Math.abs((el.eps - sim.epsEsperada) / sim.epsEsperada);
+  const rows = [
+    ["Tiempo simulado", fmtT(sim.t)],
+    ["Fase", nombreFase],
+    ["Distancia r", fmtD(el.r)],
+    ["Velocidad |v|", fmtV(el.v)],
+    ["Semieje mayor osculador a", fmtD(el.a)],
+    ["Excentricidad osculadora e", nf(el.e, 5)],
+    ["Periapsis / apoapsis", `${fmtD(el.rp)} / ${fmtD(el.ra)}`],
+    ["Energía específica ε", `${nf(el.eps, 4)} km²/s²`],
+    ["Error relativo de energía", errE.toExponential(2), errE < 1e-6 ? "ok" : (errE < 1e-3 ? "" : "mal")],
+  ];
+  if (sim.fase === 0 && sim.tB1 !== null) rows.push(["Encendido 1 en", fmtT(sim.tB1 - sim.t)]);
+  if (sim.fase === 1) {
+    rows.push(["Tiempo en transferencia", fmtT(sim.t - sim.tB1real)]);
+    if (sim.tB2 !== null) rows.push(["Encendido 2 en", fmtT(sim.tB2 - sim.t)]);
+  }
+  if (cfg.conObjetivo) {
+    const [tx, ty] = posObjetivo(sim.t);
+    rows.push(["Distancia al objetivo", fmtD(Math.hypot(tx - sim.x, ty - sim.y))]);
+    if (sim.fase === 0) {
+      const lead = wrapPi(Math.atan2(ty, tx) - Math.atan2(sim.y, sim.x));
+      rows.push(["Ángulo de fase actual", `${nf(deg(lead), 2)}°`]);
+    }
+  }
+  if (sim.fase === 2) {
+    rows.push(["Error de circularización", `e = ${nf(el.e, 6)}`, el.e < 1e-3 ? "ok" : "mal"]);
+    if (sim.distLlegada !== null) rows.push(["Distancia al objetivo en la llegada", fmtD(sim.distLlegada), sim.distLlegada < 0.01 * P.r2 ? "ok" : "mal"]);
+    rows.push(["Δv gastado", fmtV(P.dvTot)]);
+  }
+  $("tablaTele").innerHTML = filas(rows);
+  $("estado").textContent = `Fase: ${nombreFase}`;
+}
+
+function actualizarBotones() {
+  const manual = cfg.modo === "manual";
+  $("btnB1").disabled = !(manual && sim.fase === 0);
+  $("btnB2").disabled = !(manual && sim.fase === 1);
+}
+
+function pintarComparativa() {
+  let html = `<table class="comp"><tr><th>Maniobra</th><th>r₂/r₁</th><th>Δv₁ (km/s)</th><th>Δv₂ (km/s)</th><th>Δv total (km/s)</th><th>t_H</th><th>φ</th><th>Periodo sinódico</th></tr>`;
+  for (const p of Object.values(PRESETS)) {
+    const q = planHohmann(CUERPOS[p.cuerpo].mu, p.r1, p.r2);
+    html += `<tr><td>${p.nombre}</td><td>${nf(p.r2 / p.r1, 3)}</td><td>${nf(q.dv1, 3)}</td><td>${nf(q.dv2, 3)}</td><td><b>${nf(q.dvTot, 3)}</b></td><td>${fmtT(q.tH)}</td><td>${nf(deg(wrapPi(q.fase)), 1)}°</td><td>${fmtT(q.S)}</td></tr>`;
+  }
+  html += `</table><p class="nota">Los Δv heliocéntricos (Tierra → planeta) son respecto al Sol: no incluyen escapar del pozo gravitatorio terrestre ni capturarse en el planeta destino (eso se calcula con el método de cónicas empalmadas y el exceso hiperbólico v∞ = Δv).</p>`;
+  $("tablaComp").innerHTML = html;
+}
+
+// ---------------------------------------------------------------------------
+// Interfaz
+// ---------------------------------------------------------------------------
+function aplicarPreset() {
+  const key = $("preset").value;
+  const p = PRESETS[key];
+  if (p) {
+    $("cuerpo").value = p.cuerpo;
+    $("r1").value = Math.round(p.r1);
+    $("r2").value = Math.round(p.r2);
+  }
+  L0 = null;
+  reiniciar();
+}
+$("preset").addEventListener("change", aplicarPreset);
+["cuerpo", "r1", "r2"].forEach(id => $(id).addEventListener("change", () => { $("preset").value = "custom"; L0 = null; reiniciar(); }));
+$("modo").addEventListener("change", () => reiniciar(true));
+$("conObjetivo").addEventListener("change", () => reiniciar(true));
+$("btnReset").addEventListener("click", () => reiniciar(true));
+$("btnFase").addEventListener("click", () => { L0 = Math.random() * 2 * Math.PI; reiniciar(true); });
+$("btnB1").addEventListener("click", encendido1);
+$("btnB2").addEventListener("click", encendido2);
+function alternar() { corriendo = !corriendo; $("btnPlay").textContent = corriendo ? "⏸ Pausa" : "▶ Reanudar"; }
+$("btnPlay").addEventListener("click", alternar);
+document.addEventListener("keydown", e => { if (e.code === "Space" && e.target.tagName !== "INPUT") { e.preventDefault(); alternar(); } });
+function multiplicador() { return Math.pow(10, parseFloat($("velocidad").value)); }
+$("velocidad").addEventListener("input", () => { const m = multiplicador(); $("velTxt").textContent = "×" + (m < 1 ? nf(m, 2) : nf(m, 1)); });
+
+let tPrevio = performance.now();
+function bucle(ahora) {
+  const dtReal = Math.min(0.05, (ahora - tPrevio) / 1000);
+  tPrevio = ahora;
+  if (P && sim) {
+    if (corriendo) avanzar(dtReal * sim.base * multiplicador());
+    dibujar();
+    dibujarGrafico();
+    pintarTele();
+  }
+  requestAnimationFrame(bucle);
+}
+
+redimensionar();
+pintarComparativa();
+aplicarPreset();
+requestAnimationFrame(bucle);
+</script>
+</body>
+</html>
