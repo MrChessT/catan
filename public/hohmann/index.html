@@ -28,15 +28,15 @@
   header p { margin: 4px 0 0; color: var(--tenue); }
   .layout {
     display: grid; gap: 14px; padding: 14px 20px 20px;
-    grid-template-columns: minmax(0, 1fr) 360px;
+    grid-template-columns: minmax(0, 1fr) 380px;
   }
   @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } }
   .caja { background: var(--panel); border: 1px solid var(--borde); border-radius: 10px; }
-  .viz { position: relative; min-height: 520px; height: 70vh; overflow: hidden; }
-  #orbit { width: 100%; height: 100%; display: block; }
+  .viz { position: relative; min-height: 520px; height: 74vh; overflow: hidden; }
+  #orbit { width: 100%; height: 100%; display: block; touch-action: none; }
   .leyenda {
     position: absolute; left: 10px; bottom: 10px; background: rgba(7,11,22,.75);
-    border: 1px solid var(--borde); border-radius: 8px; padding: 6px 10px; font-size: 12px;
+    border: 1px solid var(--borde); border-radius: 8px; padding: 6px 10px; font-size: 12px; max-width: calc(100% - 20px);
   }
   .leyenda span { display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; }
   .leyenda i { width: 18px; height: 3px; display: inline-block; border-radius: 2px; }
@@ -44,27 +44,42 @@
     position: absolute; left: 10px; top: 10px; background: rgba(7,11,22,.75);
     border: 1px solid var(--borde); border-radius: 8px; padding: 6px 10px; font-weight: 600;
   }
+  .zoomInfo { position: absolute; right: 10px; top: 10px; font-size: 12px; color: var(--tenue); background: rgba(7,11,22,.75); border: 1px solid var(--borde); border-radius: 8px; padding: 4px 8px; }
+  .banner {
+    position: absolute; left: 50%; top: 56px; transform: translateX(-50%);
+    background: rgba(20,60,35,.92); border: 1px solid #3fae6a; color: #d8ffe4;
+    border-radius: 10px; padding: 10px 16px; font-weight: 600; text-align: center; display: none; max-width: 90%;
+  }
+  .banner.mal { background: rgba(80,20,20,.92); border-color: #c94a4a; color: #ffe0e0; }
   .panel { padding: 12px 14px; display: flex; flex-direction: column; gap: 12px; }
   .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--tenue); margin: 0 0 6px; }
+  .bloque { border-top: 1px solid var(--borde); padding-top: 10px; }
   .fila { display: flex; gap: 8px; align-items: center; margin: 5px 0; flex-wrap: wrap; }
   .fila label { min-width: 92px; color: var(--tenue); }
   select, input[type=number] {
     background: var(--panel2); color: var(--texto); border: 1px solid var(--borde);
     border-radius: 6px; padding: 5px 7px; font: inherit; flex: 1; min-width: 0;
   }
-  input[type=range] { flex: 1; }
+  input[type=number].corto { flex: 0 0 90px; }
+  input[type=range] { flex: 1; min-width: 120px; }
   button {
     background: #1f3a66; color: #fff; border: 1px solid #2f5390; border-radius: 6px;
-    padding: 6px 10px; font: inherit; cursor: pointer;
+    padding: 6px 10px; font: inherit; cursor: pointer; user-select: none; -webkit-user-select: none;
   }
   button:hover:not(:disabled) { background: #28508d; }
   button:disabled { opacity: .4; cursor: not-allowed; }
   button.encendido { background: #6b2b12; border-color: #b4501f; }
   button.encendido:hover:not(:disabled) { background: #8f3a18; }
+  button.peq { padding: 3px 7px; font-size: 12px; }
+  button.activo { background: #b4501f !important; }
+  .mando { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-width: 300px; }
+  .mando button { padding: 10px 4px; font-size: 13px; touch-action: none; }
   .nota { color: var(--tenue); font-size: 12px; }
+  .oculto { display: none !important; }
   table.datos { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
   table.datos td { padding: 2px 0; border-bottom: 1px solid #1a2440; }
   table.datos td:last-child { text-align: right; font-family: ui-monospace, Menlo, Consolas, monospace; }
+  table.datos tr.sep td { color: var(--tenue); font-size: 12px; padding-top: 8px; text-transform: uppercase; letter-spacing: .05em; }
   .grafico { grid-column: 1 / -1; height: 210px; padding: 6px; }
   #chart { width: 100%; height: 100%; display: block; }
   .teoria { grid-column: 1 / -1; padding: 16px 20px; }
@@ -76,23 +91,27 @@
   table.comp th:first-child, table.comp td:first-child { text-align: left; }
   table.comp th { background: var(--panel2); }
   .ok { color: #7cf29a; } .mal { color: #ff8a8a; }
+  kbd { background: var(--panel2); border: 1px solid var(--borde); border-radius: 4px; padding: 0 5px; font-size: 12px; }
 </style>
 </head>
 <body>
 <header>
   <h1>Transferencia de Hohmann: simulación orbital</h1>
-  <p>Integración numérica (RK4) del problema de dos cuerpos con dos encendidos impulsivos: uno en el periapsis y otro en el apoapsis de la elipse de transferencia.</p>
+  <p>Integración numérica (RK4) del problema de dos cuerpos. Maniobra de Hohmann automática o manual, transferencia bi-elíptica, impulsos libres con predicción de órbita y pilotaje con empuje continuo.</p>
 </header>
 
 <div class="layout">
   <section class="caja viz">
     <canvas id="orbit"></canvas>
     <div class="estado" id="estado">Fase: órbita inicial</div>
+    <div class="zoomInfo">Rueda / pellizco: zoom · doble clic: encuadre automático</div>
+    <div class="banner" id="banner"></div>
     <div class="leyenda">
       <span><i style="background:var(--inicial)"></i>Órbita inicial r₁</span>
-      <span><i style="background:var(--transfer)"></i>Elipse de transferencia</span>
+      <span><i style="background:var(--transfer)"></i>Transferencia</span>
       <span><i style="background:var(--final)"></i>Órbita final r₂</span>
-      <span><i style="background:var(--nave)"></i>Nave</span>
+      <span><i style="background:var(--nave)"></i>Nave / órbita actual</span>
+      <span><i style="background:#ffffff"></i>Predicción tras encender</span>
       <span><i style="background:var(--objetivo)"></i>Objetivo</span>
     </div>
   </section>
@@ -105,6 +124,7 @@
           <option value="leo_geo">LEO (300 km) → GEO</option>
           <option value="leo_gps">LEO (300 km) → órbita GPS (MEO)</option>
           <option value="geo_leo">GEO → LEO (transferencia hacia dentro)</option>
+          <option value="leo_luna">LEO (300 km) → distancia lunar (r₂/r₁ ≈ 57,6)</option>
           <option value="tierra_marte" selected>Tierra → Marte</option>
           <option value="tierra_venus">Tierra → Venus (hacia dentro)</option>
           <option value="tierra_jupiter">Tierra → Júpiter</option>
@@ -122,18 +142,103 @@
       <div class="nota" id="radiosInfo"></div>
     </div>
 
-    <div>
-      <h2>Control</h2>
-      <div class="fila"><label for="modo">Modo</label>
+    <div class="bloque">
+      <h2>Tipo de simulación</h2>
+      <div class="fila">
         <select id="modo">
-          <option value="auto">Automático (encendidos en el instante óptimo)</option>
-          <option value="manual">Manual (tú decides cuándo encender)</option>
+          <optgroup label="Automáticas">
+            <option value="auto">Hohmann automática</option>
+            <option value="bi_auto">Bi-elíptica automática (3 encendidos)</option>
+          </optgroup>
+          <optgroup label="Manuales">
+            <option value="manual">Hohmann manual (tú eliges cuándo encender)</option>
+            <option value="bi_manual">Bi-elíptica manual (3 encendidos)</option>
+            <option value="impulsos">Impulsos libres (Δv y dirección a elegir, con predicción)</option>
+            <option value="piloto">Pilotaje con empuje continuo (teclado / mando)</option>
+          </optgroup>
         </select>
       </div>
+      <div class="nota" id="modoNota"></div>
       <div class="fila"><label for="conObjetivo">Objetivo</label>
         <input type="checkbox" id="conObjetivo" checked>
-        <span class="nota">Esperar a la ventana de lanzamiento (ángulo de fase) para encontrarse con el objetivo</span>
+        <span class="nota">Hay un objetivo en r₂ y hay que encontrarse con él (ventana de lanzamiento)</span>
       </div>
+      <div class="fila"><label for="reto">Modo reto</label>
+        <input type="checkbox" id="reto" checked>
+        <span class="nota">Comprueba si llegas a la órbita r₂ circular y puntúa tu Δv frente al ideal</span>
+      </div>
+    </div>
+
+    <!-- Bi-elíptica: radio intermedio -->
+    <div class="bloque oculto" id="ctlBi">
+      <h2>Bi-elíptica</h2>
+      <div class="fila"><label for="rbRatio">r_b / máx(r₁,r₂)</label>
+        <input type="range" id="rbRatio" min="1" max="12" step="0.05" value="3">
+        <span id="rbTxt" class="nota" style="min-width:42px;text-align:right">3,00</span>
+      </div>
+      <div class="nota" id="biInfo"></div>
+    </div>
+
+    <!-- Encendidos guiados (Hohmann / bi-elíptica manual) -->
+    <div class="bloque oculto" id="ctlGuion">
+      <h2>Encendidos</h2>
+      <div class="fila"><button id="btnSig" class="encendido">🔥 Encendido 1</button> <span class="nota">(o tecla <kbd>Enter</kbd>)</span></div>
+      <div class="nota" id="sigInfo"></div>
+    </div>
+
+    <!-- Impulsos libres -->
+    <div class="bloque oculto" id="ctlImp">
+      <h2>Impulso libre</h2>
+      <div class="fila"><label for="dvMag">Δv (km/s)</label>
+        <input type="range" id="dvMagR" min="0" max="1000" step="1" value="0">
+        <input type="number" id="dvMag" class="corto" min="0" step="0.001" value="0">
+      </div>
+      <div class="fila"><label for="dvAng">Dirección (°)</label>
+        <input type="range" id="dvAngR" min="-180" max="180" step="0.5" value="0">
+        <input type="number" id="dvAng" class="corto" min="-180" max="180" step="0.5" value="0">
+      </div>
+      <div class="fila">
+        <button class="peq" data-ang="0">Prógrado</button>
+        <button class="peq" data-ang="180">Retrógrado</button>
+        <button class="peq" data-ang="90">Radial ext.</button>
+        <button class="peq" data-ang="-90">Radial int.</button>
+      </div>
+      <div class="fila">
+        <button class="peq" id="ayElipse">Ayuda: elipse hasta r₂ desde aquí</button>
+        <button class="peq" id="ayCirc">Ayuda: circularizar aquí</button>
+      </div>
+      <div class="fila"><button id="btnImp" class="encendido">🔥 Encender</button> <span class="nota"><kbd>Enter</kbd> enciende</span></div>
+      <div class="nota" id="prevInfo"></div>
+      <div class="nota">0° = prógrado (en el sentido de la velocidad), 180° = retrógrado, +90° = radial hacia fuera, −90° = radial hacia dentro. La línea blanca discontinua muestra la órbita que tendrías tras encender.</div>
+    </div>
+
+    <!-- Pilotaje continuo -->
+    <div class="bloque oculto" id="ctlPil">
+      <h2>Pilotaje con empuje continuo</h2>
+      <div class="fila"><label for="empuje">Empuje</label>
+        <input type="range" id="empuje" min="-3" max="-0.5" step="0.01" value="-2.3">
+        <span id="empTxt" class="nota" style="min-width:110px;text-align:right"></span>
+      </div>
+      <div class="mando">
+        <span></span><button data-dir="pro">▲ Prógrado</button><span></span>
+        <button data-dir="rin">◀ Radial int.</button><button data-dir="retro">▼ Retrógrado</button><button data-dir="rout">Radial ext. ▶</button>
+      </div>
+      <div class="nota">Mantén pulsado un botón, o las teclas <kbd>↑</kbd>/<kbd>W</kbd> prógrado, <kbd>↓</kbd>/<kbd>S</kbd> retrógrado, <kbd>←</kbd>/<kbd>A</kbd> radial hacia dentro, <kbd>→</kbd>/<kbd>D</kbd> radial hacia fuera. El empuje solo actúa con la simulación en marcha.</div>
+    </div>
+
+    <!-- Navegación temporal para los modos manuales -->
+    <div class="bloque oculto" id="ctlNav">
+      <h2>Saltos de tiempo</h2>
+      <div class="fila">
+        <button class="peq" id="irApo">⏭ Ir al apoapsis</button>
+        <button class="peq" id="irPeri">⏭ Ir al periapsis</button>
+        <button class="peq" id="irVentana">⏭ Ir a la ventana</button>
+      </div>
+      <div class="nota">Avanza a máxima precisión y se pausa justo en ese punto, para encender en el instante exacto.</div>
+    </div>
+
+    <div class="bloque">
+      <h2>Reproducción</h2>
       <div class="fila"><label for="velocidad">Velocidad</label>
         <input type="range" id="velocidad" min="-1.5" max="1.6" step="0.01" value="0">
         <span id="velTxt" class="nota" style="min-width:48px;text-align:right">×1</span>
@@ -143,19 +248,15 @@
         <button id="btnReset">↺ Reiniciar</button>
         <button id="btnFase">🎲 Fase aleatoria</button>
       </div>
-      <div class="fila">
-        <button id="btnB1" class="encendido">🔥 Encendido 1 (Δv₁)</button>
-        <button id="btnB2" class="encendido">🔥 Encendido 2 (Δv₂)</button>
-      </div>
-      <div class="nota" id="modoNota"></div>
+      <div class="nota"><kbd>Espacio</kbd> pausa / reanuda.</div>
     </div>
 
-    <div>
-      <h2>Plan de la maniobra (analítico)</h2>
+    <div class="bloque">
+      <h2>Plan analítico</h2>
       <table class="datos" id="tablaPlan"></table>
     </div>
 
-    <div>
+    <div class="bloque">
       <h2>Telemetría (simulación numérica)</h2>
       <table class="datos" id="tablaTele"></table>
     </div>
@@ -165,38 +266,53 @@
 
   <section class="caja teoria">
     <h2>¿Qué es la transferencia de Hohmann?</h2>
-    <p>Es la forma de pasar entre dos órbitas <b>circulares y coplanarias</b> de radios <span class="f">r₁</span> y <span class="f">r₂</span> que, con dos impulsos, gasta el mínimo Δv (siempre que <span class="f">r₂/r₁ &lt; 11,94</span>; por encima de ese cociente una transferencia bi-elíptica de tres impulsos puede ser más barata). La nave recorre media elipse cuyo periapsis toca la órbita interior y cuyo apoapsis toca la exterior. La propuso Walter Hohmann en 1925.</p>
+    <p>Es la forma de pasar entre dos órbitas <b>circulares y coplanarias</b> de radios <span class="f">r₁</span> y <span class="f">r₂</span> con dos impulsos. La nave recorre media elipse cuyo periapsis toca la órbita interior y cuyo apoapsis toca la exterior. La propuso Walter Hohmann en 1925. Entre las maniobras de dos impulsos es la de menor Δv; con tres impulsos, la bi-elíptica puede ganarle cuando el cociente de radios es muy grande (ver más abajo).</p>
 
     <h3>1. Ecuación de vis-viva</h3>
-    <p>Todo sale de la conservación de la energía en una órbita kepleriana de semieje mayor <span class="f">a</span>:</p>
     <span class="formula">v² = μ · (2/r − 1/a)</span>
-    <p>Para una órbita circular (<span class="f">a = r</span>) da <span class="f">v_circ = √(μ/r)</span>. La elipse de transferencia tiene <span class="f">a_t = (r₁ + r₂)/2</span> y excentricidad <span class="f">e_t = |r₂ − r₁| / (r₁ + r₂)</span>.</p>
+    <p>Para una órbita circular (<span class="f">a = r</span>): <span class="f">v_circ = √(μ/r)</span>. La elipse de transferencia tiene <span class="f">a_t = (r₁ + r₂)/2</span> y <span class="f">e_t = |r₂ − r₁| / (r₁ + r₂)</span>.</p>
 
-    <h3>2. Primer encendido (en r₁, periapsis de la elipse si r₂ &gt; r₁)</h3>
-    <span class="formula">v_p = √(μ·(2/r₁ − 1/a_t)) = √(μ/r₁) · √(2r₂/(r₁+r₂))
-Δv₁ = v_p − √(μ/r₁) = √(μ/r₁) · ( √(2r₂/(r₁+r₂)) − 1 )</span>
+    <h3>2. Encendidos</h3>
+    <span class="formula">Δv₁ = √(μ/r₁) · ( √(2r₂/(r₁+r₂)) − 1 )
+Δv₂ = √(μ/r₂) · ( 1 − √(2r₁/(r₁+r₂)) )</span>
+    <p>Si r₂ &lt; r₁ salen negativos: son encendidos <b>retrógrados</b>. El coste es <span class="f">|Δv₁| + |Δv₂|</span>.</p>
 
-    <h3>3. Segundo encendido (en r₂, apoapsis de la elipse)</h3>
-    <span class="formula">v_a = √(μ·(2/r₂ − 1/a_t)) = √(μ/r₂) · √(2r₁/(r₁+r₂))
-Δv₂ = √(μ/r₂) − v_a = √(μ/r₂) · ( 1 − √(2r₁/(r₁+r₂)) )</span>
-    <p>Si la transferencia es hacia dentro (r₂ &lt; r₁) las mismas fórmulas dan Δv negativos: los encendidos son <b>retrógrados</b> (frenan). El coste total es <span class="f">|Δv₁| + |Δv₂|</span>.</p>
+    <h3>3. Tiempo de vuelo y ángulo de fase</h3>
+    <span class="formula">t_H = π · √(a_t³ / μ)
+φ = π − n₂ · t_H        (n₂ = √(μ/r₂³))
+S = 2π / |n₁ − n₂|      (periodo sinódico: cada cuánto se repite la ventana)</span>
 
-    <h3>4. Tiempo de vuelo</h3>
-    <p>Es medio periodo de la elipse (tercera ley de Kepler):</p>
-    <span class="formula">t_H = π · √(a_t³ / μ)</span>
+    <h3>4. Transferencia bi-elíptica</h3>
+    <p>Tres impulsos: el primero lleva el apoapsis hasta un radio intermedio <span class="f">r_b</span> (mayor que r₁ y r₂); allí, el segundo sube el periapsis hasta r₂; al llegar a r₂, el tercero (retrógrado) circulariza.</p>
+    <span class="formula">a₁ = (r₁ + r_b)/2        a₂ = (r_b + r₂)/2
+Δv₁ = √(μ(2/r₁ − 1/a₁)) − √(μ/r₁)
+Δv₂ = √(μ(2/r_b − 1/a₂)) − √(μ(2/r_b − 1/a₁))
+Δv₃ = √(μ/r₂) − √(μ(2/r₂ − 1/a₂))       (negativo: frenado)
+t = π√(a₁³/μ) + π√(a₂³/μ)              φ = 2π − n₂·t</span>
+    <p>Es más barata que Hohmann (para algún r_b) si <span class="f">r₂/r₁ &gt; 11,94</span>, y para cualquier r_b mayor que r₂ si <span class="f">r₂/r₁ &gt; 15,58</span>; a cambio tarda mucho más. Pruébalo con el preajuste «LEO → distancia lunar» (cociente ≈ 57,6) y un r_b grande, y compáralo con LEO → GEO (cociente 6,3), donde la bi-elíptica siempre pierde.</p>
 
-    <h3>5. Ángulo de fase y ventana de lanzamiento</h3>
-    <p>Para llegar al apoapsis justo cuando pasa el objetivo, éste debe ir <b>adelantado</b> un ángulo φ en el momento del primer encendido, porque durante <span class="f">t_H</span> la nave barre 180° y el objetivo avanza <span class="f">n₂·t_H</span>:</p>
-    <span class="formula">φ = π − n₂ · t_H,   con  n₂ = √(μ/r₂³)  (movimiento medio del objetivo)</span>
-    <p>Como nave y objetivo giran a ritmos distintos, ese ángulo se repite cada <b>periodo sinódico</b> <span class="f">S = 2π / |n₁ − n₂|</span>. Para Tierra–Marte, S ≈ 780 días: por eso las misiones a Marte salen cada ~26 meses. En el simulador, con el «Objetivo» activado, la nave espera en su órbita hasta que el ángulo de fase es el correcto.</p>
+    <h3>5. Empuje continuo (bajo empuje)</h3>
+    <p>Con un motor de poco empuje (iónico, por ejemplo) la nave no puede dar impulsos instantáneos y sube en <b>espiral</b>. Si siempre empuja en dirección prógrada, la órbita se mantiene casi circular y el Δv necesario es aproximadamente la diferencia de velocidades circulares (aproximación de Edelbaum para órbitas coplanarias):</p>
+    <span class="formula">Δv_espiral ≈ |√(μ/r₁) − √(μ/r₂)|</span>
+    <p>Es mayor que el de Hohmann, porque se pierde eficiencia al empujar lejos del periapsis (efecto Oberth), pero los motores eléctricos lo compensan con creces gracias a su impulso específico mucho mayor.</p>
 
-    <h3>6. Qué hace exactamente el simulador</h3>
+    <h3>6. Tipos de simulación</h3>
     <ul>
-      <li>Integra <span class="f">r̈ = −μ r / |r|³</span> con Runge–Kutta de 4º orden en unidades reales (km, s), con un paso de ~1/2000 del periodo más corto.</li>
-      <li>Los encendidos son impulsivos: se suma Δv a lo largo del vector velocidad (prógrado si Δv &gt; 0, retrógrado si Δv &lt; 0). En modo automático el integrador se detiene exactamente en los instantes <span class="f">t₁</span> y <span class="f">t₁ + t_H</span>.</li>
-      <li>La telemetría calcula en cada fotograma los <b>elementos osculadores</b> a partir del estado (r, v): energía específica <span class="f">ε = v²/2 − μ/r</span>, <span class="f">a = −μ/(2ε)</span>, <span class="f">h = x·v_y − y·v_x</span>, <span class="f">e = √(1 + 2εh²/μ²)</span>. Así ves cómo la excentricidad pasa de 0 a e_t y vuelve a 0.</li>
-      <li>El «error de energía» compara la energía numérica con la teórica de la fase actual: mide la precisión del integrador.</li>
-      <li>En modo manual puedes encender a destiempo: verás que si el segundo impulso no se da en el apoapsis la órbita final queda elíptica (e ≠ 0).</li>
+      <li><b>Hohmann automática</b>: encendidos en los instantes óptimos calculados. Con objetivo, espera a la ventana de lanzamiento.</li>
+      <li><b>Bi-elíptica automática</b>: lo mismo con tres encendidos. El deslizador r_b fija el radio intermedio y el panel la compara con Hohmann.</li>
+      <li><b>Hohmann manual</b> y <b>bi-elíptica manual</b>: los Δv son los ideales, pero el momento de cada encendido lo eliges tú. El panel indica cuánto falta para el instante ideal y los botones «Ir al apoapsis / periapsis / ventana» llevan a él exactamente. Si enciendes a destiempo, la órbita final queda elíptica.</li>
+      <li><b>Impulsos libres</b>: eliges la magnitud y la dirección de cada impulso (prógrado, retrógrado, radial o cualquier ángulo intermedio) y lo aplicas cuando quieras, tantas veces como quieras. Una línea blanca muestra en tiempo real la órbita que tendrás después de encender, con sus a, e, periapsis y apoapsis. Las ayudas rellenan el Δv para hacer una elipse hasta r₂ o circularizar en el punto actual.</li>
+      <li><b>Pilotaje continuo</b>: mantienes pulsado el motor (teclado o botones) con una aceleración regulable. El empuje se integra dentro del RK4 y el Δv gastado se va sumando.</li>
+      <li><b>Modo reto</b>: se cumple cuando la órbita es circular en r₂ (e &lt; 0,01 y |a − r₂| &lt; 1 %) y, si hay objetivo, a menos del 2 % de r₂ de él. Entonces se muestra tu Δv frente al de Hohmann.</li>
+    </ul>
+
+    <h3>7. Qué calcula el simulador</h3>
+    <ul>
+      <li>Integra <span class="f">r̈ = −μ r/|r|³ + a_empuje</span> con Runge–Kutta de 4º orden en km y s, con un paso adaptativo de ~1/2000 del periodo circular a la distancia actual.</li>
+      <li>Los encendidos son impulsivos (cambio instantáneo de velocidad). En los modos automáticos y en los saltos de tiempo el integrador se detiene exactamente en el instante del evento.</li>
+      <li>Los elementos osculadores (a, e, periapsis, apoapsis, argumento del periapsis) se calculan del estado (r, v) con el vector excentricidad <span class="f">e = ((v² − μ/r)·r − (r·v)·v)/μ</span>. La órbita verde es esa cónica, y la blanca, la misma después de sumar el Δv elegido.</li>
+      <li>El tiempo hasta el periapsis o el apoapsis sale de la ecuación de Kepler: <span class="f">M = E − e·sen E</span>, <span class="f">t = ΔM / n</span>.</li>
+      <li>El «error de energía» compara la energía numérica con la que había justo después del último encendido: mide la precisión del integrador (debería quedarse en ~10⁻¹⁰).</li>
     </ul>
 
     <h3>Tabla comparativa de los preajustes</h3>
@@ -206,47 +322,68 @@
 
 <script>
 "use strict";
-// ---------------------------------------------------------------------------
+// ===========================================================================
 // Datos físicos
-// ---------------------------------------------------------------------------
+// ===========================================================================
 const AU = 149597870.7; // km
 const CUERPOS = {
   tierra: { nombre: "Tierra", mu: 398600.4418, R: 6371.0, color: "#3b82f6" },
   sol:    { nombre: "Sol",    mu: 1.32712440018e11, R: 696340, color: "#fbbf24" },
 };
 const PRESETS = {
-  leo_geo:        { nombre: "LEO 300 km → GEO",  cuerpo: "tierra", r1: 6671,  r2: 42164, origen: null,      objetivo: "Satélite GEO" },
-  leo_gps:        { nombre: "LEO 300 km → GPS",  cuerpo: "tierra", r1: 6671,  r2: 26560, origen: null,      objetivo: "Satélite GPS" },
-  geo_leo:        { nombre: "GEO → LEO 300 km",  cuerpo: "tierra", r1: 42164, r2: 6671,  origen: null,      objetivo: "Estación en LEO" },
-  tierra_marte:   { nombre: "Tierra → Marte",    cuerpo: "sol", r1: 1.000000 * AU, r2: 1.523679 * AU, origen: "Tierra", objetivo: "Marte" },
-  tierra_venus:   { nombre: "Tierra → Venus",    cuerpo: "sol", r1: 1.000000 * AU, r2: 0.723332 * AU, origen: "Tierra", objetivo: "Venus" },
-  tierra_jupiter: { nombre: "Tierra → Júpiter",  cuerpo: "sol", r1: 1.000000 * AU, r2: 5.2026 * AU,   origen: "Tierra", objetivo: "Júpiter" },
+  leo_geo:        { nombre: "LEO 300 km → GEO",   cuerpo: "tierra", r1: 6671,  r2: 42164,  origen: null, objetivo: "Satélite GEO" },
+  leo_gps:        { nombre: "LEO 300 km → GPS",   cuerpo: "tierra", r1: 6671,  r2: 26560,  origen: null, objetivo: "Satélite GPS" },
+  geo_leo:        { nombre: "GEO → LEO 300 km",   cuerpo: "tierra", r1: 42164, r2: 6671,   origen: null, objetivo: "Estación en LEO" },
+  leo_luna:       { nombre: "LEO → distancia lunar", cuerpo: "tierra", r1: 6671, r2: 384400, origen: null, objetivo: "Luna" },
+  tierra_marte:   { nombre: "Tierra → Marte",     cuerpo: "sol", r1: 1.000000 * AU, r2: 1.523679 * AU, origen: "Tierra", objetivo: "Marte" },
+  tierra_venus:   { nombre: "Tierra → Venus",     cuerpo: "sol", r1: 1.000000 * AU, r2: 0.723332 * AU, origen: "Tierra", objetivo: "Venus" },
+  tierra_jupiter: { nombre: "Tierra → Júpiter",   cuerpo: "sol", r1: 1.000000 * AU, r2: 5.2026 * AU,   origen: "Tierra", objetivo: "Júpiter" },
+};
+const MODOS = {
+  auto:      { guion: "hohmann", auto: true,  nombre: "Hohmann automática" },
+  bi_auto:   { guion: "bi",      auto: true,  nombre: "Bi-elíptica automática" },
+  manual:    { guion: "hohmann", auto: false, nombre: "Hohmann manual" },
+  bi_manual: { guion: "bi",      auto: false, nombre: "Bi-elíptica manual" },
+  impulsos:  { guion: null,      auto: false, nombre: "Impulsos libres" },
+  piloto:    { guion: null,      auto: false, nombre: "Pilotaje continuo" },
 };
 
-// ---------------------------------------------------------------------------
-// Plan analítico de Hohmann
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// Planes analíticos
+// ===========================================================================
 function planHohmann(mu, r1, r2) {
   const at = (r1 + r2) / 2;
   const vc1 = Math.sqrt(mu / r1), vc2 = Math.sqrt(mu / r2);
-  const vT1 = Math.sqrt(mu * (2 / r1 - 1 / at));   // velocidad en la elipse en r1
-  const vT2 = Math.sqrt(mu * (2 / r2 - 1 / at));   // velocidad en la elipse en r2
+  const vT1 = Math.sqrt(mu * (2 / r1 - 1 / at));
+  const vT2 = Math.sqrt(mu * (2 / r2 - 1 / at));
   const dv1 = vT1 - vc1, dv2 = vc2 - vT2;
   const tH = Math.PI * Math.sqrt(at ** 3 / mu);
   const et = Math.abs(r2 - r1) / (r1 + r2);
   const n1 = Math.sqrt(mu / r1 ** 3), n2 = Math.sqrt(mu / r2 ** 3);
-  const fase = Math.PI - n2 * tH;                  // adelanto necesario del objetivo
+  const fase = Math.PI - n2 * tH;
   const T1 = 2 * Math.PI / n1, T2 = 2 * Math.PI / n2;
   const S = 2 * Math.PI / Math.abs(n1 - n2);
   return { mu, r1, r2, at, vc1, vc2, vT1, vT2, dv1, dv2, dvTot: Math.abs(dv1) + Math.abs(dv2),
-           tH, et, n1, n2, fase, T1, T2, S, eps: -mu / (2 * at) };
+           tH, et, n1, n2, fase, T1, T2, S, dvEspiral: Math.abs(vc1 - vc2) };
+}
+function planBi(mu, r1, r2, rb) {
+  const a1 = (r1 + rb) / 2, a2 = (rb + r2) / 2;
+  const vc1 = Math.sqrt(mu / r1), vc2 = Math.sqrt(mu / r2);
+  const dv1 = Math.sqrt(mu * (2 / r1 - 1 / a1)) - vc1;
+  const dv2 = Math.sqrt(mu * (2 / rb - 1 / a2)) - Math.sqrt(mu * (2 / rb - 1 / a1));
+  const dv3 = vc2 - Math.sqrt(mu * (2 / r2 - 1 / a2));
+  const t1 = Math.PI * Math.sqrt(a1 ** 3 / mu), t2 = Math.PI * Math.sqrt(a2 ** 3 / mu);
+  const n2 = Math.sqrt(mu / r2 ** 3);
+  return { rb, a1, a2, dv1, dv2, dv3, dvTot: Math.abs(dv1) + Math.abs(dv2) + Math.abs(dv3),
+           t1, t2, T: t1 + t2, fase: 2 * Math.PI - n2 * (t1 + t2) };
 }
 
-// ---------------------------------------------------------------------------
-// Utilidades de formato
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// Formato
+// ===========================================================================
 const nf = (x, d = 0) => x.toLocaleString("es-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
 function fmtT(s) {
+  if (!isFinite(s)) return "—";
   const neg = s < 0; s = Math.abs(s);
   let out;
   if (s < 3600) out = `${Math.floor(s / 60)} min ${nf(s % 60, 0)} s`;
@@ -256,32 +393,35 @@ function fmtT(s) {
   return (neg ? "−" : "") + out;
 }
 function fmtD(km) {
-  if (km > 5e6) return `${nf(km / 1e6, 2)}·10⁶ km (${nf(km / AU, 3)} UA)`;
+  if (!isFinite(km)) return "∞";
+  if (Math.abs(km) > 5e6) return `${nf(km / 1e6, 2)}·10⁶ km (${nf(km / AU, 3)} UA)`;
   return `${nf(km, 0)} km`;
 }
 const fmtV = v => `${nf(v, 3)} km/s`;
 const deg = r => r * 180 / Math.PI;
-const wrapPi = a => { a = ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI; return a; };
+const rad = d => d * Math.PI / 180;
+const wrapPi = a => ((a + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;
 const wrap2Pi = a => ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
 
-// ---------------------------------------------------------------------------
-// Estado de la simulación
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// Estado
+// ===========================================================================
 const $ = id => document.getElementById(id);
-let cfg, P, sim;
+let cfg, P, B, sim;
 let corriendo = true;
-let L0 = null;           // ángulo inicial objetivo − nave (rad)
-const TH0 = 0;           // ángulo inicial de la nave
+let L0 = null;      // ángulo inicial objetivo − nave
+let zoom = 1;
+const TH0 = 0;      // ángulo inicial de la nave
 
 function leerConfig() {
   const cuerpo = CUERPOS[$("cuerpo").value];
   const r1 = parseFloat($("r1").value), r2 = parseFloat($("r2").value);
-  const key = $("preset").value;
-  const pr = PRESETS[key] || { origen: null, objetivo: "Objetivo" };
-  return { cuerpo, r1, r2, origen: pr.origen, objetivoNombre: pr.objetivo,
-           modo: $("modo").value, conObjetivo: $("conObjetivo").checked };
+  const pr = PRESETS[$("preset").value] || { origen: null, objetivo: "Objetivo" };
+  const modo = $("modo").value;
+  return { cuerpo, r1, r2, origen: pr.origen, objetivoNombre: pr.objetivo, modo, M: MODOS[modo],
+           conObjetivo: $("conObjetivo").checked, reto: $("reto").checked,
+           rbRatio: parseFloat($("rbRatio").value) };
 }
-
 function validar(c) {
   if (!(c.r1 > 0 && c.r2 > 0)) return "Los radios deben ser positivos.";
   if (Math.abs(c.r1 - c.r2) / c.r1 < 1e-3) return "r₁ y r₂ deben ser distintos.";
@@ -289,102 +429,182 @@ function validar(c) {
   return null;
 }
 
-function reiniciar(nuevaFase = false) {
+// Guion de encendidos para los modos con secuencia (Hohmann o bi-elíptica)
+function construirGuion() {
+  if (cfg.M.guion === "hohmann") {
+    return {
+      pasos: [ { dv: P.dv1, dt: 0, label: "Δv₁" }, { dv: P.dv2, dt: P.tH, label: "Δv₂" } ],
+      tramos: [ { rA: P.r1, rB: P.r2, dAng: 0 } ],
+      fase: P.fase, total: P.tH,
+      etapas: ["Órbita inicial", "Transferencia (media elipse)", "Órbita final"],
+      colores: ["#4ea8ff", "#ffd166", "#ff7b54"],
+      ayuda: ["en la ventana de lanzamiento (o cuando quieras si no hay objetivo)", "en el apoapsis de la elipse (180° después)"],
+    };
+  }
+  if (cfg.M.guion === "bi") {
+    return {
+      pasos: [ { dv: B.dv1, dt: 0, label: "Δv₁" }, { dv: B.dv2, dt: B.t1, label: "Δv₂" }, { dv: B.dv3, dt: B.t1 + B.t2, label: "Δv₃" } ],
+      tramos: [ { rA: P.r1, rB: B.rb, dAng: 0 }, { rA: B.rb, rB: P.r2, dAng: Math.PI } ],
+      fase: B.fase, total: B.T,
+      etapas: ["Órbita inicial", "Elipse 1 (subiendo hasta r_b)", "Elipse 2 (bajando hasta r₂)", "Órbita final"],
+      colores: ["#4ea8ff", "#ffd166", "#c9a7ff", "#ff7b54"],
+      ayuda: ["en la ventana de lanzamiento (o cuando quieras si no hay objetivo)", "en el apoapsis r_b", "en el periapsis, al llegar a r₂"],
+    };
+  }
+  return null;
+}
+
+function reiniciar(conservarFase = false) {
   cfg = leerConfig();
   const err = validar(cfg);
+  mostrarControles();
   if (err) { $("modoNota").innerHTML = `<span class="mal">${err}</span>`; return; }
   P = planHohmann(cfg.cuerpo.mu, cfg.r1, cfg.r2);
+  const rb = Math.max(cfg.r1, cfg.r2) * cfg.rbRatio;
+  B = planBi(cfg.cuerpo.mu, cfg.r1, cfg.r2, Math.max(rb, Math.max(cfg.r1, cfg.r2) * 1.0001));
+  const G = construirGuion();
+  const faseRef = G ? G.fase : P.fase;
   const k = P.n2 - P.n1;
-  // Por defecto el objetivo empieza colocado para que la ventana se abra a 0,35 vueltas.
-  if (L0 === null || !nuevaFase) L0 = wrap2Pi(P.fase - k * 0.35 * P.T1);
-  let tEspera;
-  if (cfg.conObjetivo) {
-    tEspera = (P.fase - L0) / k;
-    tEspera = ((tEspera % P.S) + P.S) % P.S;
-  } else {
-    tEspera = 0.35 * P.T1;
-  }
+  if (L0 === null || !conservarFase) L0 = wrap2Pi(faseRef - k * 0.35 * P.T1);
+  const tEspera = cfg.conObjetivo ? ((((faseRef - L0) / k) % P.S) + P.S) % P.S : 0.35 * P.T1;
+
   const v = P.vc1;
   sim = {
     t: 0,
     x: cfg.r1 * Math.cos(TH0), y: cfg.r1 * Math.sin(TH0),
-    vx: -v * Math.sin(TH0),    vy: v * Math.cos(TH0),
-    fase: 0,                  // 0 = órbita inicial, 1 = transferencia, 2 = órbita final
-    tB1: cfg.modo === "auto" ? tEspera : null,
-    tB2: cfg.modo === "auto" ? tEspera + P.tH : null,
-    tB1real: null, tB2real: null,
-    angB1: null, posB1: null, posB2: null,
-    estela: [], muestras: [],
-    h: Math.min(P.T1, P.T2) / 2000,
+    vx: -v * Math.sin(TH0), vy: v * Math.cos(TH0),
+    G, etapa: 0, nEnc: 0,
+    tPlan: G && cfg.M.auto ? G.pasos.map(p => tEspera + p.dt) : null,
+    tB1real: null, angB1: null,
+    encendidos: [], flash: [], estela: [], muestras: [],
     distLlegada: null,
-    flash: [],
-    epsEsperada: -P.mu / (2 * cfg.r1),
-    tEspera,
+    epsRef: -P.mu / (2 * cfg.r1),
+    dvUsado: 0,
+    empuje: null, aEmpuje: 0,
+    pausarEn: null,
+    reto: null, choque: false,
+    tEspera, faseRef,
+    vistaR: Math.max(cfg.r1, cfg.r2, G && cfg.M.guion === "bi" ? B.rb : 0),
   };
-  // Ritmo base de reproducción: espera + transferencia duran ~12 s reales a ×1.
-  sim.base = (P.tH + tEspera) / 12;
-  registrarMuestra();
+  sim.base = ((G ? G.total : P.tH) + tEspera) / 12;
+  registrarMuestra(true);
+  leerEmpuje();
   pintarPlan();
   actualizarBotones();
-  $("modoNota").textContent = cfg.modo === "auto"
-    ? "Los encendidos se aplican solos en el instante óptimo calculado."
-    : "Pulsa «Encendido 1» cuando quieras (lo ideal: cuando el ángulo de fase coincida) y «Encendido 2» al llegar al apoapsis.";
+  if (!corriendo) alternar();
+  $("banner").style.display = "none";
+  const notas = {
+    auto: "Los dos encendidos se aplican solos en el instante óptimo.",
+    bi_auto: "Los tres encendidos se aplican solos en el instante óptimo. Ajusta r_b para comparar con Hohmann.",
+    manual: "Los Δv son los ideales; tú eliges cuándo encender. Usa «Ir a la ventana» o «Ir al apoapsis» para clavar el instante.",
+    bi_manual: "Tres encendidos con los Δv ideales; tú eliges cuándo darlos.",
+    impulsos: "Elige magnitud y dirección y enciende cuantas veces quieras. La línea blanca predice la órbita resultante.",
+    piloto: "Mantén pulsado el motor. Prueba a subir en espiral empujando siempre prógrado y compara el Δv con Hohmann.",
+  };
+  $("modoNota").textContent = notas[cfg.modo];
+  actualizarPrevision();
 }
 
-// ---------------------------------------------------------------------------
-// Integrador RK4 del problema de dos cuerpos
-// ---------------------------------------------------------------------------
-function deriv(s, mu) {
+function mostrarControles() {
+  const m = $("modo").value, M = MODOS[m];
+  $("ctlBi").classList.toggle("oculto", M.guion !== "bi");
+  $("ctlGuion").classList.toggle("oculto", !(M.guion && !M.auto));
+  $("ctlImp").classList.toggle("oculto", m !== "impulsos");
+  $("ctlPil").classList.toggle("oculto", m !== "piloto");
+  $("ctlNav").classList.toggle("oculto", M.auto);
+}
+
+// ===========================================================================
+// Integrador RK4 (con empuje opcional)
+// ===========================================================================
+// Marco local: t̂ = dirección de la velocidad, n̂ = componente radial perpendicular a t̂.
+function marco(x, y, vx, vy) {
+  const v = Math.hypot(vx, vy) || 1;
+  const tx = vx / v, ty = vy / v;
+  const r = Math.hypot(x, y) || 1;
+  let nx = x / r, ny = y / r;
+  const d = nx * tx + ny * ty;
+  nx -= d * tx; ny -= d * ty;
+  const nn = Math.hypot(nx, ny);
+  if (nn < 1e-9) { nx = -ty; ny = tx; } else { nx /= nn; ny /= nn; }
+  return { tx, ty, nx, ny };
+}
+function dirEmpuje(dir, f) {
+  switch (dir) {
+    case "pro":   return [f.tx, f.ty];
+    case "retro": return [-f.tx, -f.ty];
+    case "rout":  return [f.nx, f.ny];
+    case "rin":   return [-f.nx, -f.ny];
+  }
+  return [0, 0];
+}
+function deriv(s, mu, emp) {
   const r2 = s[0] * s[0] + s[1] * s[1];
   const r3 = r2 * Math.sqrt(r2);
-  return [s[2], s[3], -mu * s[0] / r3, -mu * s[1] / r3];
+  let ax = -mu * s[0] / r3, ay = -mu * s[1] / r3;
+  if (emp) {
+    const [ux, uy] = dirEmpuje(emp.dir, marco(s[0], s[1], s[2], s[3]));
+    ax += emp.a * ux; ay += emp.a * uy;
+  }
+  return [s[2], s[3], ax, ay];
 }
-function rk4(dt) {
+function rk4(dt, emp) {
   const mu = P.mu;
   const s = [sim.x, sim.y, sim.vx, sim.vy];
-  const k1 = deriv(s, mu);
-  const s2 = s.map((v, i) => v + 0.5 * dt * k1[i]);
-  const k2 = deriv(s2, mu);
-  const s3 = s.map((v, i) => v + 0.5 * dt * k2[i]);
-  const k3 = deriv(s3, mu);
-  const s4 = s.map((v, i) => v + dt * k3[i]);
-  const k4 = deriv(s4, mu);
-  const n = s.map((v, i) => v + dt / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
-  sim.x = n[0]; sim.y = n[1]; sim.vx = n[2]; sim.vy = n[3]; sim.t += dt;
+  const k1 = deriv(s, mu, emp);
+  const k2 = deriv(s.map((v, i) => v + 0.5 * dt * k1[i]), mu, emp);
+  const k3 = deriv(s.map((v, i) => v + 0.5 * dt * k2[i]), mu, emp);
+  const k4 = deriv(s.map((v, i) => v + dt * k3[i]), mu, emp);
+  sim.x  += dt / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
+  sim.y  += dt / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
+  sim.vx += dt / 6 * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2]);
+  sim.vy += dt / 6 * (k1[3] + 2 * k2[3] + 2 * k3[3] + k4[3]);
+  sim.t += dt;
 }
 
-function encender(dv) {
-  const v = Math.hypot(sim.vx, sim.vy);
-  sim.vx += dv * sim.vx / v;
-  sim.vy += dv * sim.vy / v;
-}
-
-function encendido1() {
-  if (sim.fase !== 0) return;
-  encender(P.dv1);
-  sim.fase = 1;
-  sim.tB1real = sim.t;
-  sim.angB1 = Math.atan2(sim.y, sim.x);
-  sim.posB1 = [sim.x, sim.y];
-  sim.flash.push({ x: sim.x, y: sim.y, t0: performance.now(), txt: `Δv₁ = ${nf(P.dv1, 3)} km/s` });
-  sim.epsEsperada = P.eps;
+// ===========================================================================
+// Encendidos
+// ===========================================================================
+function aplicarDv(dvx, dvy, txt) {
+  sim.vx += dvx; sim.vy += dvy;
+  const mag = Math.hypot(dvx, dvy);
+  sim.dvUsado += mag;
+  sim.nEnc++;
+  sim.encendidos.push({ t: sim.t, x: sim.x, y: sim.y, txt });
+  sim.flash.push({ x: sim.x, y: sim.y, t0: performance.now(), txt });
+  sim.epsRef = elementos().eps;
   registrarMuestra(true);
-  actualizarBotones();
 }
-function encendido2() {
-  if (sim.fase !== 1) return;
-  encender(P.dv2);
-  sim.fase = 2;
-  sim.tB2real = sim.t;
-  sim.posB2 = [sim.x, sim.y];
-  sim.flash.push({ x: sim.x, y: sim.y, t0: performance.now(), txt: `Δv₂ = ${nf(P.dv2, 3)} km/s` });
-  sim.epsEsperada = -P.mu / (2 * P.r2);
-  if (cfg.conObjetivo) {
+function dvEnMarco(mag, angRad) {
+  const f = marco(sim.x, sim.y, sim.vx, sim.vy);
+  const c = Math.cos(angRad), s = Math.sin(angRad);
+  return [mag * (c * f.tx + s * f.nx), mag * (c * f.ty + s * f.ny)];
+}
+
+function siguienteEncendido() {
+  const G = sim.G;
+  if (!G || sim.etapa >= G.pasos.length || sim.choque) return;
+  const p = G.pasos[sim.etapa];
+  if (sim.etapa === 0) { sim.tB1real = sim.t; sim.angB1 = Math.atan2(sim.y, sim.x); }
+  const [dvx, dvy] = dvEnMarco(Math.abs(p.dv), p.dv >= 0 ? 0 : Math.PI);
+  aplicarDv(dvx, dvy, `${p.label} = ${nf(p.dv, 3)} km/s`);
+  sim.etapa++;
+  if (sim.etapa === G.pasos.length && cfg.conObjetivo) {
     const [tx, ty] = posObjetivo(sim.t);
     sim.distLlegada = Math.hypot(tx - sim.x, ty - sim.y);
   }
-  registrarMuestra(true);
   actualizarBotones();
+}
+
+function encendidoLibre() {
+  if (cfg.modo !== "impulsos" || sim.choque) return;
+  const mag = parseFloat($("dvMag").value) || 0;
+  if (mag <= 0) return;
+  const ang = rad(parseFloat($("dvAng").value) || 0);
+  const [dvx, dvy] = dvEnMarco(mag, ang);
+  aplicarDv(dvx, dvy, `Δv = ${nf(mag, 3)} km/s @ ${nf(deg(ang), 1)}°`);
+  $("dvMag").value = 0; $("dvMagR").value = 0;
+  actualizarPrevision();
 }
 
 function posObjetivo(t) {
@@ -396,57 +616,127 @@ function posOrigen(t) {
   return [P.r1 * Math.cos(a), P.r1 * Math.sin(a)];
 }
 
+// ===========================================================================
+// Avance temporal
+// ===========================================================================
 function registrarMuestra(forzar = false) {
   const m = sim.muestras;
-  const r = Math.hypot(sim.x, sim.y), v = Math.hypot(sim.vx, sim.vy);
   if (!forzar && m.length && sim.t - m[m.length - 1].t < sim.base / 400) return;
-  m.push({ t: sim.t, r, v });
-  if (m.length > 6000) m.splice(0, m.length - 6000);
+  m.push({ t: sim.t, r: Math.hypot(sim.x, sim.y), v: Math.hypot(sim.vx, sim.vy), emp: !!sim.empuje });
+  if (m.length > 8000) m.splice(0, m.length - 8000);
 }
-
+function proximoEvento() {
+  let t = Infinity;
+  if (sim.tPlan && sim.etapa < sim.tPlan.length) t = Math.min(t, sim.tPlan[sim.etapa]);
+  if (sim.pausarEn !== null) t = Math.min(t, sim.pausarEn);
+  return t;
+}
 function avanzar(dtSim) {
+  if (sim.choque) return;
   const tFin = sim.t + dtSim;
+  const emp = sim.empuje ? { dir: sim.empuje, a: sim.aEmpuje } : null;
   let pasos = 0;
-  while (sim.t < tFin && pasos < 20000) {
-    let dt = Math.min(sim.h, tFin - sim.t);
-    // No saltarse los instantes de encendido programados.
-    if (sim.fase === 0 && sim.tB1 !== null && sim.t + dt >= sim.tB1) dt = sim.tB1 - sim.t;
-    if (sim.fase === 1 && sim.tB2 !== null && sim.t + dt >= sim.tB2) dt = sim.tB2 - sim.t;
-    if (dt > 0) rk4(dt);
-    if (sim.fase === 0 && sim.tB1 !== null && sim.t >= sim.tB1 - 1e-9) encendido1();
-    if (sim.fase === 1 && sim.tB2 !== null && sim.t >= sim.tB2 - 1e-9) encendido2();
+  while (sim.t < tFin && pasos < 30000) {
+    const r = Math.hypot(sim.x, sim.y);
+    // Paso adaptativo: ~1/2000 del periodo circular a la distancia actual.
+    const hLocal = 2 * Math.PI * Math.sqrt(r ** 3 / P.mu) / 2000;
+    let dt = Math.min(hLocal, tFin - sim.t);
+    const tEv = proximoEvento();
+    if (sim.t + dt >= tEv) dt = Math.max(0, tEv - sim.t);
+    if (dt > 0) {
+      rk4(dt, emp);
+      if (emp) { sim.dvUsado += emp.a * dt; sim.epsRef = null; }
+    }
+    // Encendidos programados
+    if (sim.tPlan && sim.etapa < sim.tPlan.length && sim.t >= sim.tPlan[sim.etapa] - 1e-9) siguienteEncendido();
+    // Pausa programada (saltos de tiempo)
+    if (sim.pausarEn !== null && sim.t >= sim.pausarEn - 1e-9) {
+      sim.pausarEn = null;
+      if (corriendo) alternar();
+    }
+    // Choque con el cuerpo central
+    if (Math.hypot(sim.x, sim.y) <= cfg.cuerpo.R) {
+      sim.choque = true;
+      mostrarBanner(`💥 La nave ha chocado contra ${cfg.cuerpo.nombre === "Sol" ? "el Sol" : "la Tierra"}. Pulsa «Reiniciar».`, true);
+      break;
+    }
     // Estela
     const e = sim.estela, last = e[e.length - 1];
-    const umbral = Math.max(P.r1, P.r2) * 0.004;
+    const umbral = sim.vistaR * 0.004;
     if (!last || Math.hypot(sim.x - last.x, sim.y - last.y) > umbral) {
-      e.push({ x: sim.x, y: sim.y, f: sim.fase });
-      if (e.length > 5000) e.shift();
+      e.push({ x: sim.x, y: sim.y, c: colorEstela() });
+      if (e.length > 6000) e.shift();
     }
     registrarMuestra();
     pasos++;
+    if (!corriendo) break;
   }
+  if (emp === null && sim.epsRef === null) sim.epsRef = elementos().eps;
+}
+function colorEstela() {
+  if (sim.empuje) return "#ff5d5d";
+  if (sim.G) return sim.G.colores[Math.min(sim.etapa, sim.G.colores.length - 1)];
+  const pal = ["#4ea8ff", "#ffd166", "#c9a7ff", "#ff7b54", "#7ee0d6", "#f6a5c0"];
+  return pal[sim.nEnc % pal.length];
 }
 
-// ---------------------------------------------------------------------------
-// Elementos osculadores
-// ---------------------------------------------------------------------------
-function elementos() {
+// Saltos de tiempo
+function irA(tipo) {
+  if (sim.choque) return;
+  let dt = null;
+  if (tipo === "ventana") {
+    if (!cfg.conObjetivo) { mostrarBanner("Activa «Objetivo» para que haya ventana de lanzamiento.", true, 2500); return; }
+    const k = P.n2 - P.n1;
+    const [tx, ty] = posObjetivo(sim.t);
+    const lead = Math.atan2(ty, tx) - Math.atan2(sim.y, sim.x);
+    dt = ((((sim.faseRef - lead) / k) % P.S) + P.S) % P.S;
+    if (dt < 1e-6 * P.T1) dt += P.S;
+  } else {
+    const el = elementos();
+    if (el.e >= 1) { mostrarBanner("La trayectoria es de escape: no hay apoapsis.", true, 2500); return; }
+    if (el.e < 1e-4) { mostrarBanner("La órbita es circular (e ≈ 0): no hay periapsis ni apoapsis definidos.", true, 2500); return; }
+    dt = tipo === "apo" ? el.tApo : el.tPeri;
+  }
+  sim.pausarEn = sim.t + dt;
+  if (!corriendo) alternar();
+}
+
+// ===========================================================================
+// Elementos orbitales
+// ===========================================================================
+function elementosDe(x, y, vx, vy) {
   const mu = P.mu;
-  const r = Math.hypot(sim.x, sim.y), v = Math.hypot(sim.vx, sim.vy);
+  const r = Math.hypot(x, y), v = Math.hypot(vx, vy);
   const eps = v * v / 2 - mu / r;
-  const h = sim.x * sim.vy - sim.y * sim.vx;
+  const h = x * vy - y * vx;
+  const rv = x * vx + y * vy;
+  const ex = ((v * v - mu / r) * x - rv * vx) / mu;
+  const ey = ((v * v - mu / r) * y - rv * vy) / mu;
+  const e = Math.hypot(ex, ey);
   const a = -mu / (2 * eps);
-  const e = Math.sqrt(Math.max(0, 1 + 2 * eps * h * h / (mu * mu)));
-  return { r, v, eps, h, a, e, rp: a * (1 - e), ra: a * (1 + e) };
+  const p = h * h / mu;
+  const out = { r, v, eps, h, a, e, p, w: Math.atan2(ey, ex), rp: p / (1 + e), ra: e < 1 ? p / (1 - e) : Infinity };
+  if (e < 1 && e > 1e-9) {
+    const n = Math.sqrt(mu / a ** 3);
+    const cosE = (1 - r / a) / e, sinE = rv / (e * Math.sqrt(mu * a));
+    const E = Math.atan2(sinE, cosE);
+    const M = E - e * Math.sin(E);
+    out.T = 2 * Math.PI / n;
+    out.tPeri = wrap2Pi(-M) / n;
+    out.tApo = wrap2Pi(Math.PI - M) / n;
+    if (out.tPeri < 1e-7 * out.T) out.tPeri += out.T;
+    if (out.tApo < 1e-7 * out.T) out.tApo += out.T;
+  }
+  return out;
 }
+const elementos = () => elementosDe(sim.x, sim.y, sim.vx, sim.vy);
 
-// ---------------------------------------------------------------------------
+// ===========================================================================
 // Dibujo
-// ---------------------------------------------------------------------------
+// ===========================================================================
 const cv = $("orbit"), ctx = cv.getContext("2d");
 const ch = $("chart"), cctx = ch.getContext("2d");
-let W = 0, H = 0, CW = 0, CH = 0;
-let estrellas = [];
+let W = 0, H = 0, CW = 0, CH = 0, estrellas = [];
 function redimensionar() {
   const dpr = window.devicePixelRatio || 1;
   const r = cv.getBoundingClientRect();
@@ -461,30 +751,50 @@ function redimensionar() {
 }
 window.addEventListener("resize", redimensionar);
 
-function escala() { return (Math.min(W, H) / 2 * 0.9) / (Math.max(P.r1, P.r2) * 1.05); }
-function aPantalla(x, y, s) { return [W / 2 + x * s, H / 2 - y * s]; }
+function escala() {
+  let objetivoR = Math.max(P.r1, P.r2);
+  if (cfg.M.guion === "bi") objetivoR = Math.max(objetivoR, B.rb);
+  objetivoR = Math.max(objetivoR, Math.hypot(sim.x, sim.y) * 1.05);
+  objetivoR = Math.min(objetivoR, 40 * Math.max(P.r1, P.r2));
+  sim.vistaR += (objetivoR - sim.vistaR) * 0.08;
+  return (Math.min(W, H) / 2 * 0.9) / (sim.vistaR * 1.04) * zoom;
+}
+const aPantalla = (x, y, s) => [W / 2 + x * s, H / 2 - y * s];
 
 function circulo(r, s, color, dash) {
-  ctx.beginPath();
-  ctx.setLineDash(dash || []);
+  ctx.beginPath(); ctx.setLineDash(dash || []);
   ctx.strokeStyle = color; ctx.lineWidth = 1.5;
   ctx.arc(W / 2, H / 2, r * s, 0, 2 * Math.PI);
   ctx.stroke(); ctx.setLineDash([]);
 }
-
-// Media elipse de Hohmann que parte del ángulo angSalida.
-function puntosElipse(angSalida, desde, hasta) {
-  const at = P.at, e = P.et, p = at * (1 - e * e);
-  const haciaFuera = P.r2 > P.r1;
-  // ω: dirección del periapsis.
-  const w = haciaFuera ? angSalida : angSalida + Math.PI;
+// Media elipse que va de rA (en el ángulo angA) a rB (en angA + π), en sentido antihorario.
+function puntosSemi(rA, rB, angA) {
+  const a = (rA + rB) / 2, e = Math.abs(rB - rA) / (rA + rB), p = a * (1 - e * e);
+  const sube = rB > rA;
+  const w = sube ? angA : angA + Math.PI;
   const pts = [];
-  const N = 240;
-  for (let i = 0; i <= N; i++) {
-    const nuRel = desde + (hasta - desde) * i / N;     // ángulo recorrido desde el punto de salida
-    const nu = haciaFuera ? nuRel : nuRel + Math.PI;    // anomalía verdadera
+  for (let i = 0; i <= 200; i++) {
+    const nuRel = Math.PI * i / 200;
+    const nu = sube ? nuRel : nuRel + Math.PI;
     const r = p / (1 + e * Math.cos(nu));
     pts.push([r * Math.cos(w + nu), r * Math.sin(w + nu)]);
+  }
+  return pts;
+}
+// Cónica completa a partir de elementos (elipse, o rama de hipérbola)
+function puntosConica(el) {
+  const pts = [];
+  if (el.e < 1) {
+    for (let i = 0; i <= 360; i++) {
+      const nu = 2 * Math.PI * i / 360, r = el.p / (1 + el.e * Math.cos(nu));
+      pts.push([r * Math.cos(el.w + nu), r * Math.sin(el.w + nu)]);
+    }
+  } else {
+    const lim = Math.acos(-1 / el.e) - 0.02;
+    for (let i = 0; i <= 300; i++) {
+      const nu = -lim + 2 * lim * i / 300, r = el.p / (1 + el.e * Math.cos(nu));
+      if (r > 0 && r < 60 * Math.max(P.r1, P.r2)) pts.push([r * Math.cos(el.w + nu), r * Math.sin(el.w + nu)]);
+    }
   }
   return pts;
 }
@@ -501,11 +811,15 @@ function etiqueta(txt, X, Y, color, align = "left") {
   ctx.fillRect(x0 - 3, Y - 12, w + 6, 16);
   ctx.fillStyle = color; ctx.fillText(txt, X, Y);
 }
+function marcaApside(x, y, s, txt, color) {
+  const [X, Y] = aPantalla(x, y, s);
+  ctx.fillStyle = color; ctx.beginPath(); ctx.arc(X, Y, 3, 0, 2 * Math.PI); ctx.fill();
+  etiqueta(txt, X + 6, Y - 6, color);
+}
 
 function dibujar() {
   ctx.clearRect(0, 0, W, H);
   for (const st of estrellas) { ctx.fillStyle = `rgba(255,255,255,${0.15 + 0.5 * st.b})`; ctx.fillRect(st.x, st.y, 1.2, 1.2); }
-  if (!P) return;
   const s = escala();
 
   // Cuerpo central
@@ -518,44 +832,56 @@ function dibujar() {
   ctx.fillStyle = cfg.cuerpo.color; ctx.beginPath(); ctx.arc(W / 2, H / 2, Rpx, 0, 2 * Math.PI); ctx.fill();
   etiqueta(cfg.cuerpo.nombre, W / 2, H / 2 + Rpx + 16, "#c9d6ee", "center");
 
-  // Órbitas circulares
   circulo(P.r1, s, "rgba(78,168,255,.75)", [6, 5]);
   circulo(P.r2, s, "rgba(255,123,84,.75)", [6, 5]);
+  if (cfg.M.guion === "bi") circulo(B.rb, s, "rgba(201,167,255,.35)", [2, 6]);
 
-  // Elipse de transferencia
-  let angSalida;
-  if (sim.fase === 0) {
-    angSalida = sim.tB1 !== null ? TH0 + P.n1 * sim.tB1 : Math.atan2(sim.y, sim.x);
-    trazar(puntosElipse(angSalida, 0, Math.PI), s, "rgba(255,209,102,.45)", 1.5, [3, 5]);
-    const [X, Y] = aPantalla(P.r1 * Math.cos(angSalida), P.r1 * Math.sin(angSalida), s);
-    ctx.strokeStyle = "rgba(255,209,102,.9)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(X, Y, 6, 0, 2 * Math.PI); ctx.stroke();
-    etiqueta(cfg.modo === "auto" ? "Punto del encendido 1" : "Elipse si enciendes ahora", X + 9, Y - 6, "#ffd166");
-  } else {
-    angSalida = sim.angB1;
-    trazar(puntosElipse(angSalida, 0, 2 * Math.PI), s, "rgba(255,209,102,.18)", 1, [2, 6]);
-    trazar(puntosElipse(angSalida, 0, Math.PI), s, "rgba(255,209,102,.8)", 1.8);
+  // Trayectoria de referencia de los modos con guion
+  const G = sim.G;
+  if (G) {
+    let angSalida;
+    if (sim.etapa === 0) {
+      angSalida = sim.tPlan ? TH0 + P.n1 * sim.tPlan[0] : Math.atan2(sim.y, sim.x);
+      G.tramos.forEach(tr => trazar(puntosSemi(tr.rA, tr.rB, angSalida + tr.dAng), s, "rgba(255,209,102,.45)", 1.5, [3, 5]));
+      const [X, Y] = aPantalla(P.r1 * Math.cos(angSalida), P.r1 * Math.sin(angSalida), s);
+      ctx.strokeStyle = "rgba(255,209,102,.9)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(X, Y, 6, 0, 2 * Math.PI); ctx.stroke();
+      etiqueta(sim.tPlan ? "Punto del encendido 1" : "Trayectoria ideal si enciendes ahora", X + 9, Y - 6, "#ffd166");
+    } else {
+      angSalida = sim.angB1;
+      G.tramos.forEach((tr, i) => {
+        const pts = puntosSemi(tr.rA, tr.rB, angSalida + tr.dAng);
+        trazar(pts, s, i === sim.etapa - 1 ? "rgba(255,209,102,.85)" : "rgba(255,209,102,.3)", i === sim.etapa - 1 ? 1.8 : 1.2, i === sim.etapa - 1 ? [] : [3, 5]);
+      });
+    }
   }
-  // Línea de ápsides
-  {
-    const [X1, Y1] = aPantalla(P.r1 * Math.cos(angSalida), P.r1 * Math.sin(angSalida), s);
-    const [X2, Y2] = aPantalla(-P.r2 * Math.cos(angSalida), -P.r2 * Math.sin(angSalida), s);
-    ctx.setLineDash([2, 4]); ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(X1, Y1); ctx.lineTo(X2, Y2); ctx.stroke(); ctx.setLineDash([]);
-    etiqueta(P.r2 > P.r1 ? "apoapsis" : "periapsis", X2 + 8, Y2 + 4, "rgba(255,209,102,.9)");
+
+  // Órbita osculadora actual (modos manuales) y predicción tras el encendido
+  const el = elementos();
+  if (!cfg.M.auto && !sim.choque) {
+    trazar(puntosConica(el), s, "rgba(124,242,154,.55)", 1.2, [5, 4]);
+    if (el.e < 1 && el.e > 1e-3) {
+      marcaApside(el.rp * Math.cos(el.w), el.rp * Math.sin(el.w), s, "Pe", "#a6f7bb");
+      marcaApside(el.ra * Math.cos(el.w + Math.PI), el.ra * Math.sin(el.w + Math.PI), s, "Ap", "#a6f7bb");
+    }
+    if (cfg.modo === "impulsos" && prevision) {
+      trazar(puntosConica(prevision), s, "rgba(255,255,255,.85)", 1.5, [7, 4]);
+      if (prevision.e < 1 && prevision.e > 1e-3) {
+        marcaApside(prevision.rp * Math.cos(prevision.w), prevision.rp * Math.sin(prevision.w), s, "Pe′", "#ffffff");
+        marcaApside(prevision.ra * Math.cos(prevision.w + Math.PI), prevision.ra * Math.sin(prevision.w + Math.PI), s, "Ap′", "#ffffff");
+      }
+    }
   }
 
   // Estela
-  const colores = ["#4ea8ff", "#ffd166", "#ff7b54"];
   const e = sim.estela;
   for (let i = 1; i < e.length; i++) {
     const [X0, Y0] = aPantalla(e[i - 1].x, e[i - 1].y, s);
     const [X1, Y1] = aPantalla(e[i].x, e[i].y, s);
-    ctx.strokeStyle = colores[e[i].f]; ctx.globalAlpha = 0.25 + 0.75 * i / e.length; ctx.lineWidth = 2;
+    ctx.strokeStyle = e[i].c; ctx.globalAlpha = 0.25 + 0.75 * i / e.length; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(X0, Y0); ctx.lineTo(X1, Y1); ctx.stroke();
   }
   ctx.globalAlpha = 1;
 
-  // Cuerpo de origen (Tierra en los casos interplanetarios)
   if (cfg.origen) {
     const [ox, oy] = posOrigen(sim.t);
     const [X, Y] = aPantalla(ox, oy, s);
@@ -569,22 +895,21 @@ function dibujar() {
     const [X, Y] = aPantalla(tx, ty, s);
     ctx.fillStyle = "#e26dff"; ctx.beginPath(); ctx.arc(X, Y, 6, 0, 2 * Math.PI); ctx.fill();
     etiqueta(cfg.objetivoNombre, X + 9, Y - 8, "#f0b2ff");
-    if (sim.fase === 0) {
-      // Arco del ángulo de fase actual (nave → objetivo)
+    if (sim.nEnc === 0 && !sim.empuje && sim.dvUsado === 0) {
       const angN = Math.atan2(sim.y, sim.x);
       const lead = wrapPi(Math.atan2(ty, tx) - angN);
+      const req = wrapPi(sim.faseRef);
       const rr = Math.min(P.r1, P.r2) * s * 0.55;
       ctx.strokeStyle = "rgba(226,109,255,.8)"; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(W / 2, H / 2, rr, -angN, -(angN + lead), lead > 0); ctx.stroke();
-      // Arco del ángulo de fase requerido
       ctx.strokeStyle = "rgba(255,209,102,.55)"; ctx.setLineDash([4, 4]);
-      ctx.beginPath(); ctx.arc(W / 2, H / 2, rr * 0.85, -angN, -(angN + wrapPi(P.fase)), wrapPi(P.fase) > 0); ctx.stroke();
+      ctx.beginPath(); ctx.arc(W / 2, H / 2, rr * 0.85, -angN, -(angN + req), req > 0); ctx.stroke();
       ctx.setLineDash([]);
       [[angN, "rgba(124,242,154,.4)"], [Math.atan2(ty, tx), "rgba(226,109,255,.4)"]].forEach(([a, c]) => {
         ctx.strokeStyle = c; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(W / 2, H / 2);
         ctx.lineTo(W / 2 + Math.cos(a) * rr * 1.25, H / 2 - Math.sin(a) * rr * 1.25); ctx.stroke();
       });
-      etiqueta(`fase actual ${nf(deg(lead), 1)}° · requerida ${nf(deg(wrapPi(P.fase)), 1)}°`, W / 2, H / 2 - Rpx - 14 - (cfg.cuerpo === CUERPOS.sol ? 22 : 8), "#f0b2ff", "center");
+      etiqueta(`fase actual ${nf(deg(lead), 1)}° · requerida ${nf(deg(req), 1)}°`, W / 2, H / 2 - Rpx - 14 - (cfg.cuerpo === CUERPOS.sol ? 22 : 8), "#f0b2ff", "center");
     }
   }
 
@@ -598,22 +923,31 @@ function dibujar() {
       ctx.beginPath(); ctx.arc(X, Y, 6 + edad * 40, 0, 2 * Math.PI); ctx.stroke();
     }
     ctx.fillStyle = "#ff9a3c"; ctx.beginPath(); ctx.arc(X, Y, 4, 0, 2 * Math.PI); ctx.fill();
-    etiqueta(f.txt, X + 8, Y + 18, "#ffb27a");
+    if (sim.flash.length <= 8 || f === sim.flash[sim.flash.length - 1]) etiqueta(f.txt, X + 8, Y + 18, "#ffb27a");
   }
 
-  // Nave + vector velocidad
+  // Nave, velocidad y llama
   const [NX, NY] = aPantalla(sim.x, sim.y, s);
   const v = Math.hypot(sim.vx, sim.vy);
   const ux = sim.vx / v, uy = sim.vy / v;
-  const largo = 22 + 40 * v / Math.max(P.vT1, P.vT2, P.vc1, P.vc2);
+  const largo = 22 + 40 * Math.min(1.5, v / Math.max(P.vT1, P.vT2, P.vc1, P.vc2));
   ctx.strokeStyle = "#7cf29a"; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(NX, NY); ctx.lineTo(NX + ux * largo, NY - uy * largo); ctx.stroke();
   const ang = Math.atan2(-uy, ux);
-  ctx.save(); ctx.translate(NX, NY); ctx.rotate(ang);
-  ctx.fillStyle = "#7cf29a"; ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-6, 5); ctx.lineTo(-3, 0); ctx.lineTo(-6, -5); ctx.closePath(); ctx.fill();
-  ctx.restore();
   ctx.save(); ctx.translate(NX + ux * largo, NY - uy * largo); ctx.rotate(ang);
   ctx.fillStyle = "#7cf29a"; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-7, 4); ctx.lineTo(-7, -4); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  // Orientación de la nave: hacia el empuje / impulso elegido, si lo hay
+  let apunta = [ux, uy];
+  if (sim.empuje) apunta = dirEmpuje(sim.empuje, marco(sim.x, sim.y, sim.vx, sim.vy));
+  else if (cfg.modo === "impulsos") apunta = dvEnMarco(1, rad(parseFloat($("dvAng").value) || 0));
+  const angN = Math.atan2(-apunta[1], apunta[0]);
+  ctx.save(); ctx.translate(NX, NY); ctx.rotate(angN);
+  if (sim.empuje) {
+    ctx.fillStyle = `rgba(255,${120 + Math.random() * 80},40,.95)`;
+    ctx.beginPath(); ctx.moveTo(-5, 3); ctx.lineTo(-16 - Math.random() * 8, 0); ctx.lineTo(-5, -3); ctx.closePath(); ctx.fill();
+  }
+  ctx.fillStyle = "#7cf29a"; ctx.beginPath(); ctx.moveTo(9, 0); ctx.lineTo(-6, 5); ctx.lineTo(-3, 0); ctx.lineTo(-6, -5); ctx.closePath(); ctx.fill();
   ctx.restore();
   etiqueta(`v = ${nf(v, 2)} km/s`, NX + ux * largo + 6, NY - uy * largo - 6, "#a6f7bb");
 }
@@ -622,21 +956,21 @@ function dibujarGrafico() {
   cctx.clearRect(0, 0, CW, CH);
   const m = sim.muestras;
   if (m.length < 2) return;
-  const pad = { l: 58, r: 58, t: 22, b: 26 };
+  const pad = { l: 58, r: 64, t: 22, b: 26 };
   const w = CW - pad.l - pad.r, h = CH - pad.t - pad.b;
-  const tMax = Math.max(sim.t, (sim.tB2 ?? sim.t) * 1.15, 1e-9);
-  let vMin = Infinity, vMax = -Infinity;
-  for (const p of m) { vMin = Math.min(vMin, p.v); vMax = Math.max(vMax, p.v); }
-  [P.vc1, P.vc2, P.vT1, P.vT2].forEach(x => { vMin = Math.min(vMin, x); vMax = Math.max(vMax, x); });
-  const rMin = Math.min(P.r1, P.r2) * 0.95, rMax = Math.max(P.r1, P.r2) * 1.05;
-  const vm = (vMax - vMin) * 0.08; vMin -= vm; vMax += vm;
+  const tUlt = sim.tPlan ? sim.tPlan[sim.tPlan.length - 1] : sim.t;
+  const tMax = Math.max(sim.t, tUlt * 1.15, 1e-9);
+  let vMin = Infinity, vMax = -Infinity, rMin = Math.min(P.r1, P.r2), rMax = Math.max(P.r1, P.r2);
+  for (const p of m) { vMin = Math.min(vMin, p.v); vMax = Math.max(vMax, p.v); rMin = Math.min(rMin, p.r); rMax = Math.max(rMax, p.r); }
+  [P.vc1, P.vc2].forEach(x => { vMin = Math.min(vMin, x); vMax = Math.max(vMax, x); });
+  const vm = (vMax - vMin) * 0.08 || 0.1; vMin -= vm; vMax += vm;
+  const rm = (rMax - rMin) * 0.06; rMin -= rm; rMax += rm;
   const X = t => pad.l + w * t / tMax;
   const Yv = v => pad.t + h * (1 - (v - vMin) / (vMax - vMin));
   const Yr = r => pad.t + h * (1 - (r - rMin) / (rMax - rMin));
 
-  cctx.strokeStyle = "#23304d"; cctx.lineWidth = 1;
-  cctx.strokeRect(pad.l, pad.t, w, h);
-  cctx.font = "11px system-ui, sans-serif"; cctx.fillStyle = "#8b9abb";
+  cctx.strokeStyle = "#23304d"; cctx.lineWidth = 1; cctx.strokeRect(pad.l, pad.t, w, h);
+  cctx.font = "11px system-ui, sans-serif";
   for (let i = 0; i <= 4; i++) {
     const y = pad.t + h * i / 4;
     cctx.strokeStyle = "rgba(35,48,77,.6)"; cctx.beginPath(); cctx.moveTo(pad.l, y); cctx.lineTo(pad.l + w, y); cctx.stroke();
@@ -644,20 +978,23 @@ function dibujarGrafico() {
     cctx.fillText(nf(vMax - (vMax - vMin) * i / 4, 2), pad.l - 6, y + 4);
     cctx.textAlign = "left"; cctx.fillStyle = "#c9a7ff";
     const rv = rMax - (rMax - rMin) * i / 4;
-    cctx.fillText(rv > 5e6 ? nf(rv / AU, 2) + " UA" : nf(rv / 1000, 1) + "k", pad.l + w + 6, y + 4);
+    cctx.fillText(rv > 5e6 ? nf(rv / AU, 2) + " UA" : nf(rv / 1000, 1) + "k km", pad.l + w + 6, y + 4);
   }
   cctx.fillStyle = "#7cf29a"; cctx.textAlign = "left"; cctx.fillText("velocidad (km/s)", pad.l, 14);
-  cctx.fillStyle = "#c9a7ff"; cctx.textAlign = "right"; cctx.fillText(P.r1 > 5e6 ? "distancia r" : "distancia r (km)", pad.l + w, 14);
+  cctx.fillStyle = "#c9a7ff"; cctx.textAlign = "right"; cctx.fillText("distancia r", pad.l + w, 14);
   cctx.fillStyle = "#8b9abb"; cctx.textAlign = "center"; cctx.fillText(`tiempo (0 – ${fmtT(tMax)})`, pad.l + w / 2, CH - 6);
 
-  // Encendidos
-  [[sim.tB1real ?? sim.tB1, "Δv₁"], [sim.tB2real ?? sim.tB2, "Δv₂"]].forEach(([t, txt]) => {
-    if (t == null) return;
+  // Tramos con empuje
+  cctx.fillStyle = "rgba(255,93,93,.12)";
+  for (let i = 1; i < m.length; i++) if (m[i].emp) cctx.fillRect(X(m[i - 1].t), pad.t, Math.max(1, X(m[i].t) - X(m[i - 1].t)), h);
+  // Encendidos realizados y programados
+  const marcas = sim.encendidos.map((e, i) => [e.t, `#${i + 1}`]);
+  if (sim.tPlan) sim.tPlan.slice(sim.etapa).forEach((t, i) => marcas.push([t, sim.G.pasos[sim.etapa + i].label]));
+  marcas.forEach(([t, txt]) => {
     cctx.strokeStyle = "rgba(255,154,60,.7)"; cctx.setLineDash([4, 4]);
     cctx.beginPath(); cctx.moveTo(X(t), pad.t); cctx.lineTo(X(t), pad.t + h); cctx.stroke(); cctx.setLineDash([]);
     cctx.fillStyle = "#ffb27a"; cctx.textAlign = "center"; cctx.fillText(txt, X(t), pad.t - 4);
   });
-
   const linea = (f, color) => {
     cctx.beginPath();
     m.forEach((p, i) => { const x = X(p.t), y = f(p); i ? cctx.lineTo(x, y) : cctx.moveTo(x, y); });
@@ -667,125 +1004,314 @@ function dibujarGrafico() {
   linea(p => Yv(p.v), "#7cf29a");
 }
 
-// ---------------------------------------------------------------------------
-// Paneles de datos
-// ---------------------------------------------------------------------------
-function filas(arr) { return arr.map(([k, v, cls]) => `<tr><td>${k}</td><td class="${cls || ""}">${v}</td></tr>`).join(""); }
-
+// ===========================================================================
+// Paneles
+// ===========================================================================
+function filas(arr) {
+  return arr.map(f => f.sep ? `<tr class="sep"><td colspan="2">${f.sep}</td></tr>`
+    : `<tr><td>${f[0]}</td><td class="${f[2] || ""}">${f[1]}</td></tr>`).join("");
+}
 function pintarPlan() {
-  const haciaFuera = P.r2 > P.r1;
-  $("tablaPlan").innerHTML = filas([
+  const fuera = P.r2 > P.r1;
+  const rows = [
     ["Velocidad circular en r₁", fmtV(P.vc1)],
     ["Velocidad circular en r₂", fmtV(P.vc2)],
-    ["Semieje mayor a_t", fmtD(P.at)],
-    ["Excentricidad e_t", nf(P.et, 4)],
-    [`v en ${haciaFuera ? "periapsis" : "apoapsis"} (r₁)`, fmtV(P.vT1)],
-    [`v en ${haciaFuera ? "apoapsis" : "periapsis"} (r₂)`, fmtV(P.vT2)],
+    { sep: "Hohmann" },
+    ["Semieje a_t / excentricidad e_t", `${fmtD(P.at)} / ${nf(P.et, 4)}`],
+    [`v en ${fuera ? "periapsis" : "apoapsis"} (r₁)`, fmtV(P.vT1)],
+    [`v en ${fuera ? "apoapsis" : "periapsis"} (r₂)`, fmtV(P.vT2)],
     [`Δv₁ (${P.dv1 >= 0 ? "prógrado" : "retrógrado"})`, fmtV(P.dv1)],
     [`Δv₂ (${P.dv2 >= 0 ? "prógrado" : "retrógrado"})`, fmtV(P.dv2)],
-    ["Δv total", `<b>${fmtV(P.dvTot)}</b>`],
+    ["Δv total Hohmann", `<b>${fmtV(P.dvTot)}</b>`],
     ["Tiempo de transferencia t_H", fmtT(P.tH)],
-    ["Periodo órbita inicial T₁", fmtT(P.T1)],
-    ["Periodo órbita final T₂", fmtT(P.T2)],
-    ["Ángulo de fase requerido φ", `${nf(deg(wrapPi(P.fase)), 2)}°`],
+    ["Ángulo de fase φ", `${nf(deg(wrapPi(P.fase)), 2)}°`],
+  ];
+  if (cfg.M.guion === "bi") {
+    const mejor = B.dvTot < P.dvTot;
+    rows.push({ sep: `Bi-elíptica (r_b = ${fmtD(B.rb)})` },
+      ["Δv₁ / Δv₂ / Δv₃", `${nf(B.dv1, 3)} / ${nf(B.dv2, 3)} / ${nf(B.dv3, 3)}`],
+      ["Δv total bi-elíptica", `<b>${fmtV(B.dvTot)}</b>`, mejor ? "ok" : "mal"],
+      ["Diferencia con Hohmann", `${B.dvTot - P.dvTot >= 0 ? "+" : ""}${nf((B.dvTot - P.dvTot) * 1000, 1)} m/s`, mejor ? "ok" : "mal"],
+      ["Tiempo total (t₁ + t₂)", `${fmtT(B.T)} (×${nf(B.T / P.tH, 2)})`],
+      ["Ángulo de fase φ", `${nf(deg(wrapPi(B.fase)), 2)}°`]);
+  }
+  if (cfg.modo === "piloto") {
+    rows.push({ sep: "Espiral de bajo empuje" },
+      ["Δv aprox. (Edelbaum) |v_c1 − v_c2|", fmtV(P.dvEspiral)],
+      ["Sobrecoste frente a Hohmann", `${nf((P.dvEspiral / P.dvTot - 1) * 100, 1)} %`]);
+  }
+  rows.push({ sep: "Tiempos" },
+    ["Periodo T₁ / T₂", `${fmtT(P.T1)} / ${fmtT(P.T2)}`],
     ["Periodo sinódico S", fmtT(P.S)],
-    ["Espera hasta el encendido 1", cfg.modo === "auto" ? fmtT(sim.tEspera) : "manual"],
-  ]);
-  const ri = $("radiosInfo");
+    ["Espera hasta la ventana", cfg.conObjetivo ? fmtT(sim.tEspera) : "sin objetivo"]);
+  $("tablaPlan").innerHTML = filas(rows);
   const alt = r => cfg.cuerpo === CUERPOS.tierra ? `altitud ${nf(r - cfg.cuerpo.R)} km` : `${nf(r / AU, 4)} UA`;
-  ri.textContent = `r₁: ${alt(cfg.r1)} · r₂: ${alt(cfg.r2)} · cociente r₂/r₁ = ${nf(cfg.r2 / cfg.r1, 3)}`;
+  $("radiosInfo").textContent = `r₁: ${alt(cfg.r1)} · r₂: ${alt(cfg.r2)} · cociente r₂/r₁ = ${nf(cfg.r2 / cfg.r1, 3)}`;
+  $("rbTxt").textContent = nf(cfg.rbRatio, 2);
+  $("biInfo").innerHTML = `r_b = ${fmtD(B.rb)} · Δv total ${fmtV(B.dvTot)} frente a ${fmtV(P.dvTot)} de Hohmann: <b class="${B.dvTot < P.dvTot ? "ok" : "mal"}">${B.dvTot < P.dvTot ? "la bi-elíptica gana" : "Hohmann gana"}</b>.`;
+}
+
+function nombreFase() {
+  if (sim.choque) return "Impacto";
+  if (sim.G) return sim.G.etapas[sim.etapa];
+  if (sim.empuje) return `Empujando (${{ pro: "prógrado", retro: "retrógrado", rout: "radial ext.", rin: "radial int." }[sim.empuje]})`;
+  return sim.nEnc === 0 && sim.dvUsado === 0 ? "Órbita inicial" : `Vuelo libre (${sim.nEnc} encendido${sim.nEnc === 1 ? "" : "s"})`;
 }
 
 function pintarTele() {
   const el = elementos();
-  const nombreFase = ["Órbita inicial (esperando)", "Transferencia (media elipse)", "Órbita final"][sim.fase];
-  const errE = Math.abs((el.eps - sim.epsEsperada) / sim.epsEsperada);
   const rows = [
     ["Tiempo simulado", fmtT(sim.t)],
-    ["Fase", nombreFase],
     ["Distancia r", fmtD(el.r)],
     ["Velocidad |v|", fmtV(el.v)],
-    ["Semieje mayor osculador a", fmtD(el.a)],
-    ["Excentricidad osculadora e", nf(el.e, 5)],
+    ["Semieje mayor a", el.e < 1 ? fmtD(el.a) : "— (hipérbola)"],
+    ["Excentricidad e", nf(el.e, 5), el.e >= 1 ? "mal" : ""],
     ["Periapsis / apoapsis", `${fmtD(el.rp)} / ${fmtD(el.ra)}`],
     ["Energía específica ε", `${nf(el.eps, 4)} km²/s²`],
-    ["Error relativo de energía", errE.toExponential(2), errE < 1e-6 ? "ok" : (errE < 1e-3 ? "" : "mal")],
   ];
-  if (sim.fase === 0 && sim.tB1 !== null) rows.push(["Encendido 1 en", fmtT(sim.tB1 - sim.t)]);
-  if (sim.fase === 1) {
-    rows.push(["Tiempo en transferencia", fmtT(sim.t - sim.tB1real)]);
-    if (sim.tB2 !== null) rows.push(["Encendido 2 en", fmtT(sim.tB2 - sim.t)]);
+  if (sim.epsRef !== null && !sim.empuje) {
+    const errE = Math.abs((el.eps - sim.epsRef) / sim.epsRef);
+    rows.push(["Error relativo de energía", errE.toExponential(2), errE < 1e-6 ? "ok" : (errE < 1e-3 ? "" : "mal")]);
+  } else rows.push(["Error relativo de energía", "— (empuje activo)"]);
+  if (!cfg.M.auto && el.e < 1 && el.e > 1e-4) {
+    rows.push(["Tiempo hasta periapsis", fmtT(el.tPeri)], ["Tiempo hasta apoapsis", fmtT(el.tApo)]);
+  }
+  rows.push(["Δv gastado", fmtV(sim.dvUsado)], ["Δv ideal Hohmann", fmtV(P.dvTot)]);
+
+  if (sim.G) {
+    const G = sim.G;
+    if (sim.tPlan && sim.etapa < sim.tPlan.length) rows.push([`${G.pasos[sim.etapa].label} en`, fmtT(sim.tPlan[sim.etapa] - sim.t)]);
+    if (!sim.tPlan && sim.etapa < G.pasos.length) {
+      const ideal = idealSiguiente();
+      if (ideal !== null) rows.push([`Instante ideal de ${G.pasos[sim.etapa].label}`, ideal >= 0 ? `dentro de ${fmtT(ideal)}` : `pasado hace ${fmtT(-ideal)}`, ideal >= 0 ? "" : "mal"]);
+    }
   }
   if (cfg.conObjetivo) {
     const [tx, ty] = posObjetivo(sim.t);
     rows.push(["Distancia al objetivo", fmtD(Math.hypot(tx - sim.x, ty - sim.y))]);
-    if (sim.fase === 0) {
-      const lead = wrapPi(Math.atan2(ty, tx) - Math.atan2(sim.y, sim.x));
-      rows.push(["Ángulo de fase actual", `${nf(deg(lead), 2)}°`]);
-    }
+    const lead = wrapPi(Math.atan2(ty, tx) - Math.atan2(sim.y, sim.x));
+    rows.push(["Ángulo de fase actual / requerido", `${nf(deg(lead), 1)}° / ${nf(deg(wrapPi(sim.faseRef)), 1)}°`]);
+    if (sim.distLlegada !== null) rows.push(["Distancia al objetivo en la llegada", fmtD(sim.distLlegada), sim.distLlegada < 0.02 * P.r2 ? "ok" : "mal"]);
   }
-  if (sim.fase === 2) {
-    rows.push(["Error de circularización", `e = ${nf(el.e, 6)}`, el.e < 1e-3 ? "ok" : "mal"]);
-    if (sim.distLlegada !== null) rows.push(["Distancia al objetivo en la llegada", fmtD(sim.distLlegada), sim.distLlegada < 0.01 * P.r2 ? "ok" : "mal"]);
-    rows.push(["Δv gastado", fmtV(P.dvTot)]);
+  if (cfg.reto) {
+    const okOrb = el.e < 0.01 && Math.abs(el.a - P.r2) / P.r2 < 0.01;
+    rows.push({ sep: "Reto" }, ["Órbita circular en r₂", okOrb ? "✓" : `✗ (e = ${nf(el.e, 3)}, Δa = ${nf((el.a - P.r2) / P.r2 * 100, 1)} %)`, okOrb ? "ok" : "mal"]);
+    if (cfg.conObjetivo) {
+      const [tx, ty] = posObjetivo(sim.t);
+      const d = Math.hypot(tx - sim.x, ty - sim.y);
+      rows.push(["Encuentro con el objetivo (< 2 % r₂)", d < 0.02 * P.r2 ? "✓" : "✗", d < 0.02 * P.r2 ? "ok" : "mal"]);
+    }
+    if (sim.reto) rows.push(["Resultado", `${fmtV(sim.reto.dv)} · ${nf(sim.reto.ef, 1)} % del ideal`, "ok"]);
   }
   $("tablaTele").innerHTML = filas(rows);
-  $("estado").textContent = `Fase: ${nombreFase}`;
+  $("estado").textContent = `${MODOS[cfg.modo].nombre} · ${nombreFase()}`;
+  comprobarReto(el);
+}
+
+function idealSiguiente() {
+  const G = sim.G;
+  if (sim.etapa === 0) {
+    if (!cfg.conObjetivo) return null;
+    const k = P.n2 - P.n1;
+    const [tx, ty] = posObjetivo(sim.t);
+    const lead = Math.atan2(ty, tx) - Math.atan2(sim.y, sim.x);
+    let dt = ((((sim.faseRef - lead) / k) % P.S) + P.S) % P.S;
+    if (dt > P.S - 0.02 * P.T1) dt -= P.S;   // se acaba de pasar
+    return dt;
+  }
+  return sim.tB1real + G.pasos[sim.etapa].dt - sim.t;
+}
+
+function comprobarReto(el) {
+  if (!cfg.reto || sim.reto || sim.empuje || sim.choque || sim.dvUsado === 0) return;
+  const okOrb = el.e < 0.01 && Math.abs(el.a - P.r2) / P.r2 < 0.01;
+  let okEnc = true;
+  if (cfg.conObjetivo) { const [tx, ty] = posObjetivo(sim.t); okEnc = Math.hypot(tx - sim.x, ty - sim.y) < 0.02 * P.r2; }
+  if (okOrb && okEnc) {
+    const ef = sim.dvUsado / P.dvTot * 100;
+    sim.reto = { t: sim.t, dv: sim.dvUsado, ef };
+    const valor = ef < 99.5 ? "¡Has gastado menos que Hohmann!" : ef <= 100.5 ? "¡Perfecto, Δv mínimo de Hohmann!" : ef < 110 ? "¡Muy eficiente!" : ef < 150 ? "Bien, pero se puede gastar menos." : "Lo has conseguido, aunque con mucho gasto de combustible.";
+    mostrarBanner(`🏁 ¡Reto conseguido${cfg.conObjetivo ? " con encuentro" : ""}! Δv gastado ${fmtV(sim.dvUsado)} (${nf(ef, 1)} % del ideal de Hohmann, ${fmtV(P.dvTot)}). ${valor}`, false, 9000);
+  }
+}
+
+let bannerTimer = null;
+function mostrarBanner(txt, mal = false, ms = 0) {
+  const b = $("banner");
+  b.textContent = txt; b.classList.toggle("mal", mal); b.style.display = "block";
+  clearTimeout(bannerTimer);
+  if (ms) bannerTimer = setTimeout(() => { b.style.display = "none"; }, ms);
 }
 
 function actualizarBotones() {
-  const manual = cfg.modo === "manual";
-  $("btnB1").disabled = !(manual && sim.fase === 0);
-  $("btnB2").disabled = !(manual && sim.fase === 1);
+  const G = sim.G;
+  const btn = $("btnSig");
+  if (G && !cfg.M.auto) {
+    if (sim.etapa < G.pasos.length) {
+      const p = G.pasos[sim.etapa];
+      btn.disabled = sim.choque;
+      btn.textContent = `🔥 Encendido ${sim.etapa + 1} de ${G.pasos.length}: ${p.label} = ${nf(p.dv, 3)} km/s ${p.dv >= 0 ? "(prógrado)" : "(retrógrado)"}`;
+      $("sigInfo").textContent = `Ideal: ${G.ayuda[sim.etapa]}.`;
+    } else {
+      btn.disabled = true; btn.textContent = "✔ Secuencia completada";
+      $("sigInfo").textContent = "Ya no quedan encendidos. Pulsa «Reiniciar» para repetir.";
+    }
+  }
 }
 
+// --- Previsión de órbita en el modo de impulsos libres ---
+let prevision = null;
+function actualizarPrevision() {
+  if (!sim || cfg.modo !== "impulsos") { prevision = null; return; }
+  const mag = parseFloat($("dvMag").value) || 0;
+  const ang = rad(parseFloat($("dvAng").value) || 0);
+  const [dvx, dvy] = dvEnMarco(mag, ang);
+  prevision = mag > 0 ? elementosDe(sim.x, sim.y, sim.vx + dvx, sim.vy + dvy) : null;
+  $("prevInfo").innerHTML = prevision
+    ? `Tras encender: a = ${prevision.e < 1 ? fmtD(prevision.a) : "hipérbola"}, e = ${nf(prevision.e, 4)}, Pe = ${fmtD(prevision.rp)}, Ap = ${fmtD(prevision.ra)}${prevision.rp < cfg.cuerpo.R ? ' · <span class="mal">¡el periapsis queda bajo la superficie!</span>' : ""}`
+    : "Elige un Δv mayor que 0 para ver la órbita prevista.";
+}
+function fijarImpulso(mag, angDeg) {
+  const maxR = parseFloat($("dvMagR").max);
+  mag = Math.max(0, mag);
+  $("dvMag").value = nf2(mag);
+  $("dvMagR").value = Math.min(maxR, Math.round(mag / maxDvLibre() * maxR));
+  angDeg = wrapPi(rad(angDeg)) * 180 / Math.PI;
+  $("dvAng").value = (Math.round(angDeg * 10) / 10).toString();
+  $("dvAngR").value = angDeg;
+  actualizarPrevision();
+}
+const nf2 = x => (Math.round(x * 10000) / 10000).toString();
+const maxDvLibre = () => Math.max(Math.abs(P.dv1), Math.abs(P.dv2), P.vc1 * 0.3) * 1.6;
+function ayudaVelocidad(vObjetivo) {
+  // Δv necesario para tener velocidad tangencial vObjetivo en el punto actual
+  const r = Math.hypot(sim.x, sim.y);
+  const h = sim.x * sim.vy - sim.y * sim.vx;
+  const sgn = h >= 0 ? 1 : -1;
+  const vtx = -sgn * sim.y / r * vObjetivo, vty = sgn * sim.x / r * vObjetivo;
+  const dx = vtx - sim.vx, dy = vty - sim.vy;
+  const f = marco(sim.x, sim.y, sim.vx, sim.vy);
+  const dt = dx * f.tx + dy * f.ty, dn = dx * f.nx + dy * f.ny;
+  fijarImpulso(Math.hypot(dt, dn), deg(Math.atan2(dn, dt)));
+}
+
+// ===========================================================================
+// Comparativa
+// ===========================================================================
 function pintarComparativa() {
-  let html = `<table class="comp"><tr><th>Maniobra</th><th>r₂/r₁</th><th>Δv₁ (km/s)</th><th>Δv₂ (km/s)</th><th>Δv total (km/s)</th><th>t_H</th><th>φ</th><th>Periodo sinódico</th></tr>`;
+  let html = `<table class="comp"><tr><th>Maniobra</th><th>r₂/r₁</th><th>Δv₁</th><th>Δv₂</th><th>Δv Hohmann</th><th>t_H</th><th>φ</th><th>Δv bi-elíptica (r_b = 3·máx)</th><th>Δv espiral</th></tr>`;
   for (const p of Object.values(PRESETS)) {
-    const q = planHohmann(CUERPOS[p.cuerpo].mu, p.r1, p.r2);
-    html += `<tr><td>${p.nombre}</td><td>${nf(p.r2 / p.r1, 3)}</td><td>${nf(q.dv1, 3)}</td><td>${nf(q.dv2, 3)}</td><td><b>${nf(q.dvTot, 3)}</b></td><td>${fmtT(q.tH)}</td><td>${nf(deg(wrapPi(q.fase)), 1)}°</td><td>${fmtT(q.S)}</td></tr>`;
+    const mu = CUERPOS[p.cuerpo].mu;
+    const q = planHohmann(mu, p.r1, p.r2);
+    const b = planBi(mu, p.r1, p.r2, 3 * Math.max(p.r1, p.r2));
+    html += `<tr><td>${p.nombre}</td><td>${nf(p.r2 / p.r1, 3)}</td><td>${nf(q.dv1, 3)}</td><td>${nf(q.dv2, 3)}</td><td><b>${nf(q.dvTot, 3)}</b></td><td>${fmtT(q.tH)}</td><td>${nf(deg(wrapPi(q.fase)), 1)}°</td><td class="${b.dvTot < q.dvTot ? "ok" : "mal"}">${nf(b.dvTot, 3)}</td><td>${nf(q.dvEspiral, 3)}</td></tr>`;
   }
-  html += `</table><p class="nota">Los Δv heliocéntricos (Tierra → planeta) son respecto al Sol: no incluyen escapar del pozo gravitatorio terrestre ni capturarse en el planeta destino (eso se calcula con el método de cónicas empalmadas y el exceso hiperbólico v∞ = Δv).</p>`;
+  html += `</table><p class="nota">Todos los Δv en km/s. Los heliocéntricos (Tierra → planeta) son respecto al Sol: no incluyen escapar de la gravedad terrestre ni la captura en el planeta destino (cónicas empalmadas, v∞ = Δv).</p>`;
   $("tablaComp").innerHTML = html;
 }
 
-// ---------------------------------------------------------------------------
-// Interfaz
-// ---------------------------------------------------------------------------
+// ===========================================================================
+// Interfaz y eventos
+// ===========================================================================
 function aplicarPreset() {
-  const key = $("preset").value;
-  const p = PRESETS[key];
-  if (p) {
-    $("cuerpo").value = p.cuerpo;
-    $("r1").value = Math.round(p.r1);
-    $("r2").value = Math.round(p.r2);
-  }
-  L0 = null;
+  const p = PRESETS[$("preset").value];
+  if (p) { $("cuerpo").value = p.cuerpo; $("r1").value = Math.round(p.r1); $("r2").value = Math.round(p.r2); }
+  L0 = null; zoom = 1;
   reiniciar();
 }
 $("preset").addEventListener("change", aplicarPreset);
+// Quitar el foco de los desplegables tras elegir, para que las flechas piloten la nave y no cambien la opción.
+document.querySelectorAll("select").forEach(sel => sel.addEventListener("change", () => sel.blur()));
 ["cuerpo", "r1", "r2"].forEach(id => $(id).addEventListener("change", () => { $("preset").value = "custom"; L0 = null; reiniciar(); }));
 $("modo").addEventListener("change", () => reiniciar(true));
 $("conObjetivo").addEventListener("change", () => reiniciar(true));
+$("reto").addEventListener("change", () => { cfg.reto = $("reto").checked; });
+$("rbRatio").addEventListener("input", () => reiniciar(true));
 $("btnReset").addEventListener("click", () => reiniciar(true));
 $("btnFase").addEventListener("click", () => { L0 = Math.random() * 2 * Math.PI; reiniciar(true); });
-$("btnB1").addEventListener("click", encendido1);
-$("btnB2").addEventListener("click", encendido2);
+$("btnSig").addEventListener("click", siguienteEncendido);
+$("btnImp").addEventListener("click", encendidoLibre);
+$("irApo").addEventListener("click", () => irA("apo"));
+$("irPeri").addEventListener("click", () => irA("peri"));
+$("irVentana").addEventListener("click", () => irA("ventana"));
+
+// Impulso libre
+$("dvMagR").addEventListener("input", () => { $("dvMag").value = nf2($("dvMagR").value / $("dvMagR").max * maxDvLibre()); actualizarPrevision(); });
+$("dvMag").addEventListener("input", () => fijarImpulso(parseFloat($("dvMag").value) || 0, parseFloat($("dvAng").value) || 0));
+$("dvAngR").addEventListener("input", () => { $("dvAng").value = $("dvAngR").value; actualizarPrevision(); });
+$("dvAng").addEventListener("input", () => { $("dvAngR").value = $("dvAng").value; actualizarPrevision(); });
+document.querySelectorAll("#ctlImp [data-ang]").forEach(b => b.addEventListener("click", () => fijarImpulso(parseFloat($("dvMag").value) || 0, parseFloat(b.dataset.ang))));
+$("ayCirc").addEventListener("click", () => ayudaVelocidad(Math.sqrt(P.mu / Math.hypot(sim.x, sim.y))));
+$("ayElipse").addEventListener("click", () => {
+  const r = Math.hypot(sim.x, sim.y);
+  ayudaVelocidad(Math.sqrt(P.mu * (2 / r - 2 / (r + P.r2))));
+});
+
+// Pilotaje
+function leerEmpuje() {
+  if (!P) return;
+  const g1 = P.mu / (P.r1 * P.r1);                       // km/s²
+  const frac = Math.pow(10, parseFloat($("empuje").value));
+  if (sim) sim.aEmpuje = g1 * frac;
+  $("empTxt").textContent = `${nf(g1 * frac * 1000 * 1000, 2)} mm/s² (${nf(frac * 100, 2)} % g₁)`;
+}
+$("empuje").addEventListener("input", leerEmpuje);
+function setEmpuje(dir) {
+  if (cfg.modo !== "piloto" || sim.choque) dir = null;
+  sim.empuje = dir;
+  document.querySelectorAll(".mando [data-dir]").forEach(b => b.classList.toggle("activo", b.dataset.dir === dir));
+}
+document.querySelectorAll(".mando [data-dir]").forEach(b => {
+  b.addEventListener("pointerdown", e => { e.preventDefault(); b.setPointerCapture(e.pointerId); setEmpuje(b.dataset.dir); });
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => b.addEventListener(ev, () => { if (sim.empuje === b.dataset.dir) setEmpuje(null); }));
+});
+const TECLAS = { ArrowUp: "pro", KeyW: "pro", ArrowDown: "retro", KeyS: "retro", ArrowLeft: "rin", KeyA: "rin", ArrowRight: "rout", KeyD: "rout" };
+document.addEventListener("keydown", e => {
+  const enCampo = ["INPUT", "SELECT", "TEXTAREA"].includes(e.target.tagName);
+  if (e.code === "Space" && !enCampo) { e.preventDefault(); alternar(); return; }
+  if ((e.code === "Enter" || e.code === "NumpadEnter") && !enCampo) {
+    if (cfg.modo === "impulsos") { e.preventDefault(); encendidoLibre(); }
+    else if (cfg.M.guion && !cfg.M.auto) { e.preventDefault(); siguienteEncendido(); }
+    return;
+  }
+  if (cfg.modo === "piloto" && TECLAS[e.code] && !enCampo) { e.preventDefault(); setEmpuje(TECLAS[e.code]); }
+});
+document.addEventListener("keyup", e => { if (cfg.modo === "piloto" && TECLAS[e.code] === sim.empuje) setEmpuje(null); });
+window.addEventListener("blur", () => sim && setEmpuje(null));
+
+// Reproducción
 function alternar() { corriendo = !corriendo; $("btnPlay").textContent = corriendo ? "⏸ Pausa" : "▶ Reanudar"; }
 $("btnPlay").addEventListener("click", alternar);
-document.addEventListener("keydown", e => { if (e.code === "Space" && e.target.tagName !== "INPUT") { e.preventDefault(); alternar(); } });
-function multiplicador() { return Math.pow(10, parseFloat($("velocidad").value)); }
+const multiplicador = () => Math.pow(10, parseFloat($("velocidad").value));
 $("velocidad").addEventListener("input", () => { const m = multiplicador(); $("velTxt").textContent = "×" + (m < 1 ? nf(m, 2) : nf(m, 1)); });
 
-let tPrevio = performance.now();
+// Zoom
+cv.addEventListener("wheel", e => { e.preventDefault(); zoom = Math.min(20, Math.max(0.2, zoom * Math.exp(-e.deltaY * 0.0015))); }, { passive: false });
+cv.addEventListener("dblclick", () => { zoom = 1; });
+const punteros = new Map(); let distPinch = null;
+cv.addEventListener("pointerdown", e => punteros.set(e.pointerId, [e.clientX, e.clientY]));
+cv.addEventListener("pointermove", e => {
+  if (!punteros.has(e.pointerId)) return;
+  punteros.set(e.pointerId, [e.clientX, e.clientY]);
+  if (punteros.size === 2) {
+    const [a, b] = [...punteros.values()];
+    const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+    if (distPinch) zoom = Math.min(20, Math.max(0.2, zoom * d / distPinch));
+    distPinch = d;
+  }
+});
+["pointerup", "pointercancel", "pointerleave"].forEach(ev => cv.addEventListener(ev, e => { punteros.delete(e.pointerId); distPinch = null; }));
+
+let tPrevio = performance.now(), cuentaFrames = 0;
 function bucle(ahora) {
   const dtReal = Math.min(0.05, (ahora - tPrevio) / 1000);
   tPrevio = ahora;
   if (P && sim) {
     if (corriendo) avanzar(dtReal * sim.base * multiplicador());
+    if (cfg.modo === "impulsos" && (corriendo || !prevision)) actualizarPrevision();
     dibujar();
     dibujarGrafico();
-    pintarTele();
+    if (++cuentaFrames % 3 === 0 || !corriendo) pintarTele();
   }
   requestAnimationFrame(bucle);
 }
